@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}
+Upload Image
+{% endblock %}
+{% block body %}
+<h1 class="display-2">Colors to Music</h1>
+<h1 class="display-6 mb-3">Turn your coloring page into a song!	</h1>
+<form id="image-upload-form" class="input-group" action="/upload" method="get">
+	<input class="btn btn-primary" type = "submit" value="Click to begin" style="width: 100%;"/>
+</form>
+{% endblock %}

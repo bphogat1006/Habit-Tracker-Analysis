@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}
+Upload Image
+{% endblock %}
+{% block body %}
+<label for="image" class="form-label display-2 mb-3">Upload a file to begin</label>
+{% include "flash.html" %}
+<form id="image-upload-form" class="input-group" action="/uploader" method="post" enctype="multipart/form-data">
+	<input class="form-control" type="file" name="image" id="image"/>
+	<input class="btn btn-primary" type = "submit"/>
+</form>
+{% endblock %}
