@@ -1,10 +1,16 @@
 from flask import render_template, request, redirect, url_for, flash
-from app import app
+from app import app, db
+from app.models import Tracker, Test
 from werkzeug.utils import secure_filename
 import os
 
+@app.before_first_request
+def create_db():
+    db.create_all()
+
 @app.route("/home", methods=['GET'])
 def view_home():
+
     return render_template("home.html")
     
 @app.route("/upload", methods=['GET'])
@@ -32,5 +38,11 @@ def display_image(filename):
     print(os.path.isfile(path))
     if(not os.path.isfile(path)):
         flash("image '" + filename + "' does not exist")
-    return render_template("display.html", filename="uploads/"+filename)
 
+    
+    return render_template("display.html", filename="uploads/"+filename, text="uploaded to db")
+
+def randomString(len):
+    chars = 'abcdefghijklmnopqrstuvwxyz123456789'
+    output = ''.join(char for char in chars)
+    return output
