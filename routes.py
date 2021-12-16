@@ -8,7 +8,7 @@ import os
 def create_db():
     db.create_all()
 
-@app.route("/home", methods=['GET'])
+@app.route("/", methods=['GET'])
 def view_home():
 
     return render_template("home.html")
@@ -40,7 +40,7 @@ def display_image(filename):
         flash("image '" + filename + "' does not exist")
 
     
-    return render_template("display.html", filename="uploads/"+filename, text="uploaded to db")
+    return render_template("display.html", filename="uploads/"+filename)
 
 def randomString(len):
     chars = 'abcdefghijklmnopqrstuvwxyz123456789'
