@@ -3,3 +3,4 @@
 workspace.code-workspace
 venv
 run.py
+app/test.py
