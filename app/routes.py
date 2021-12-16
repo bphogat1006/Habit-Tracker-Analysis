@@ -12,7 +12,7 @@ def create_db():
 def view_home():
 
     return render_template("home.html")
-    
+
 @app.route("/upload", methods=['GET'])
 def view_upload_page():
     return render_template("upload.html")
@@ -35,11 +35,10 @@ def upload_file():
 @app.route("/display/<filename>", methods = ['GET'])
 def display_image(filename):
     path = os.path.join(app.root_path, app.config["IMAGE_UPLOADS_PATH"], filename)
-    print(os.path.isfile(path))
     if(not os.path.isfile(path)):
         flash("image '" + filename + "' does not exist")
 
-    
+
     return render_template("display.html", filename="uploads/"+filename)
 
 def randomString(len):
