@@ -1,9 +1,59 @@
 {% extends "base.html" %}
+{% from "editable.html" import editable %}
+
 {% block title %}
-Uploaded Image
+    Uploaded Image
 {% endblock %}
+
 {% block body %}
-<h1 class="display-2">Uploaded image</h1>
-{% include "flash.html" %}
-<img id="uploaded-image" class="my-4" src="{{url_for('get_image', filename=filename)}}" style="width:100%;"></img>
+
+    <h1 class="display-2">Uploaded image</h1>
+
+    {% include "flash.html" %}
+
+    <img id="uploaded-image" class="my-4" src="{{url_for('get_image', filename=filename)}}" style="width:100%;"></img>
+
+    <button id="tmpbtn" class="btn btn-lg btn-primary mb-3">Save Data</button>
+    
+    <table class="table">
+        <tr>
+            <th>Activity Name</th>
+            <th>Times completed</th>
+            <th>Completion Goal</th>
+            <th>Percent Finished</th>
+        </tr>
+        {% for row in table %}
+        <tr>
+            <td>{{ editable(row.activityName) }}</td>
+            <td>{{ editable(row.timesCompleted) }}</td>
+            <td>{{ editable(row.goal) }}</td>
+            <td>{{ editable(row.ratio) }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+
+    <script>
+        $(() => {
+
+            var editables = $(".editable").map(function() {
+                return this;
+            }).get();
+
+            $("#tmpbtn").click(function() {
+                console.log("click")
+                $(".editable").map(function() {
+                    $(this).text(toTitleCase($(this).text()));
+                })
+            })
+
+        })
+        
+        function toTitleCase(str) {
+            return str.replace(/\w\S*/g, function(txt){
+                return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            });
+        }
+    </script>
+
 {% endblock %}

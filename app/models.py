@@ -35,10 +35,7 @@ class TrackerScanner:
         self.__getBubbleContours()
         self.__sortContours()
         self.__scanBubbles()
-        
-
         self.__saveImage(self.__paper, draw_contours=True)
-
 
     def __readImage(self):
         try:
@@ -178,6 +175,7 @@ class TrackerScanner:
         self.__bubblesFilled = []
         self.__bubblesPartial = []
         self.__bubblesEmpty = []
+        self.data = [[] for i in range(14)]
         for i in range(14):
             row = self.__bubbleCnts[i]
             for bubble in row:
@@ -186,8 +184,11 @@ class TrackerScanner:
                 mask = cv2.bitwise_and(self.__thresh, self.__thresh, mask=mask)
                 total = cv2.countNonZero(mask)
                 if total > 850:
+                    self.data[i].append(1)
                     self.__bubblesFilled.append(bubble)
                 elif total > 650:
+                    self.data[i].append(0.5)
                     self.__bubblesPartial.append(bubble)
                 else:
+                    self.data[i].append(0)
                     self.__bubblesEmpty.append(bubble)
