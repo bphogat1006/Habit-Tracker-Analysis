@@ -51,7 +51,6 @@ def display_image(filename):
     except Exception as e:
         print(e)
         flash(e)
-        return render_template('error.html')
     
     grid = tracker.data
     # activityNames = get_from_db
@@ -69,7 +68,7 @@ def display_image(filename):
     for i in range(14):
         activityName = "click_to_edit_activity_name"
         if totals[i]==numDaysInMonth*2:
-            activityName = "click_to_edit_activity_1/click_to_edit_activity_2"
+            activityName = "click_to_edit_activity_1 / click_to_edit_activity_2"
         table.append({
             "activityName": activityName,
             "timesCompleted": filled[i],
@@ -79,10 +78,9 @@ def display_image(filename):
 
     return render_template("display.html", filename=filename, table=table)
 
-@app.route("/error", methods = ['GET'])
-def error():
+@app.errorhandler(Exception)
+def http_error_handler(error):
     return render_template("error.html")
-
 
 def randomString(len):
     chars = 'abcdefghijklmnopqrstuvwxyz123456789'
