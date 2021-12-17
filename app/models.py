@@ -33,11 +33,12 @@ class TrackerScanner:
         self.__binarize()
         self.__dilate()
         self.__getBubbleContours()
-        if not self.numBubblesDetected == 434:
-            raise Exception(f"Tracker was not scanned correctly. Number of bubbles detected: {self.numBubblesDetected}")
         self.__sortContours()
+        self.__scanBubbles()
+        
 
-        self.__saveImage(self.__warped)
+        self.__saveImage(self.__paper, draw_contours=True)
+
 
     def __readImage(self):
         try:
@@ -46,11 +47,26 @@ class TrackerScanner:
             print(f"Error while loader tracker image to scan bubbles.\nPath: {self.__path}")
             print(e)
 
-    def __saveImage(self, image):
+    def __saveImage(self, image, draw_contours=True):
+        if draw_contours:
+            image = self.__drawContours(image)
+        cv2.imwrite(self.__path, image)
+
+    def __drawContours(self, image):
         if(len(image.shape)<3):
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-        cv2.drawContours(image, self.__bubbleCnts, -1, (0, 255, 0), 3)
-        cv2.imwrite(self.__path, image)
+        cv2.drawContours(image, self.__bubblesFilled, -1, (0, 255, 0), 3)
+        cv2.drawContours(image, self.__bubblesPartial, -1, (0, 255, 255), 3)
+        cv2.drawContours(image, self.__bubblesEmpty, -1, (0, 0, 255), 3)
+        return image
+
+    def __createHistogram(self, data, bucketsize=1):
+        minVal = min(data)
+        maxVal = max(data)
+        a = np.array(data)
+        pyplot.title("histogram")
+        pyplot.hist(a, bins = np.arange(minVal, maxVal, step=bucketsize))
+        pyplot.savefig("histogram.jpg")
 
     def __prepareImage(self):
         # convert it to grayscale, blur it slightly
@@ -135,11 +151,43 @@ class TrackerScanner:
                 "aspect_ratio": abs(1-ar) < 0.3,
                 "size": 30 < w < 50,
                 "num_vertices": 6 < len(approxVerts) < 17,
-                "area": 850 < area < 1150
+                "area": 850 < area < 1200
             }
             if checks["location"] and checks["aspect_ratio"] and checks["size"] and checks["num_vertices"] and checks["area"]:
                 self.__bubbleCnts.append(c)
         self.numBubblesDetected = len(self.__bubbleCnts)
+        if not self.numBubblesDetected == 434:
+            raise Exception(f"Tracker was not scanned correctly. Number of bubbles detected: {self.numBubblesDetected}")
 
     def __sortContours(self):
-        pass
+        # sort the question contours top-to-bottom
+        self.__bubbleCnts = contours.sort_contours(self.__bubbleCnts,
+            method="top-to-bottom")[0]
+        # each habit has 31 bubbles for each day, so loop over the
+        # question in batches of 31
+        sortedBubbles = []
+        for i in range(14):
+            i*=31
+            row = self.__bubbleCnts[i:i+31]
+            # sort each row of bubbles from left to right
+            row = contours.sort_contours(row, method="left-to-right")[0]
+            sortedBubbles.append(row)
+        self.__bubbleCnts = sortedBubbles
+    
+    def __scanBubbles(self):
+        self.__bubblesFilled = []
+        self.__bubblesPartial = []
+        self.__bubblesEmpty = []
+        for i in range(14):
+            row = self.__bubbleCnts[i]
+            for bubble in row:
+                mask = np.zeros(self.__thresh.shape, dtype="uint8")
+                cv2.drawContours(mask, [bubble], -1, 255, -1)
+                mask = cv2.bitwise_and(self.__thresh, self.__thresh, mask=mask)
+                total = cv2.countNonZero(mask)
+                if total > 850:
+                    self.__bubblesFilled.append(bubble)
+                elif total > 650:
+                    self.__bubblesPartial.append(bubble)
+                else:
+                    self.__bubblesEmpty.append(bubble)
