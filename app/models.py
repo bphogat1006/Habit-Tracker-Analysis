@@ -31,11 +31,13 @@ class TrackerScanner:
         self.__fourPointTransform()
         self.__resizeTransformedImage()
         self.__binarize()
-        self.__dilate()
         self.__getBubbleContours()
+        if not self.numBubblesDetected == 434:
+            raise Exception(f"Tracker was not scanned correctly. Number of bubbles detected: {self.numBubblesDetected}/434")
         self.__sortContours()
         self.__scanBubbles()
-        self.__saveImage(self.__paper, draw_contours=True)
+        # self.__saveImage(self.__tmp, draw_contours=False)
+        self.__saveImage(self.__thresh, draw_contours=True)
 
     def __readImage(self):
         try:
@@ -69,7 +71,11 @@ class TrackerScanner:
         # convert it to grayscale, blur it slightly
         self.__gray = cv2.cvtColor(self.__image, cv2.COLOR_BGR2GRAY)
         blurred = cv2.bilateralFilter(self.__gray, 5, 175, 175)
+        # find edges
         self.__edged = cv2.Canny(blurred, 75, 200)
+        # dilate edges slightly to assist in finding document
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3, 3))
+        self.__edged = cv2.dilate(self.__edged, kernel)
 
     def __fourPointTransform(self):	
         # find contours in the edge map, then initialize
@@ -94,6 +100,8 @@ class TrackerScanner:
                     docCnt = approx
                     break
         if docCnt is None: raise Exception("No 4 point contour found")
+        self.__pageContour = cv2.cvtColor(self.__edged.copy(), cv2.COLOR_GRAY2BGR)
+        cv2.drawContours(self.__pageContour, [docCnt], 0, (0, 255, 0), 3)
 
         # apply a four point perspective transform to both the
         # original image and grayscale image to obtain a top-down
@@ -102,11 +110,7 @@ class TrackerScanner:
         self.__warped = four_point_transform(self.__gray, docCnt.reshape(4, 2))
 
     def __resizeTransformedImage(self):
-        # resize image to width 2000px while preserving aspect ratio
-        (h, w) = self.__warped.shape[:2]
-        width = 2000
-        r = width / float(w)
-        dim = (width, int(h * r))
+        dim = (2000, 1545)
         self.__paper = cv2.resize(self.__paper, dim, interpolation = cv2.INTER_AREA)
         self.__warped = cv2.resize(self.__warped, dim, interpolation = cv2.INTER_AREA)
 
@@ -115,8 +119,6 @@ class TrackerScanner:
         # piece of paper
         self.__thresh = cv2.adaptiveThreshold(self.__warped, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                                 cv2.THRESH_BINARY_INV, 199, 10)
-
-    def __dilate(self):
         # slight adjustment with morphological operation to close any open bubble contours
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3, 3))
         self.__thresh = cv2.dilate(self.__thresh, kernel)
@@ -144,7 +146,7 @@ class TrackerScanner:
             # should be sufficiently wide, sufficiently tall, and
             # have an aspect ratio approximately equal to 1
             checks = {
-                "location": (x>450 and y>410),
+                "location": (x>460 and y>420),
                 "aspect_ratio": abs(1-ar) < 0.3,
                 "size": 30 < w < 50,
                 "num_vertices": 6 < len(approxVerts) < 17,
@@ -152,9 +154,10 @@ class TrackerScanner:
             }
             if checks["location"] and checks["aspect_ratio"] and checks["size"] and checks["num_vertices"] and checks["area"]:
                 self.__bubbleCnts.append(c)
+
         self.numBubblesDetected = len(self.__bubbleCnts)
-        if not self.numBubblesDetected == 434:
-            raise Exception(f"Tracker was not scanned correctly. Number of bubbles detected: {self.numBubblesDetected}")
+        self.__bubblesFound = cv2.cvtColor(self.__thresh.copy(), cv2.COLOR_GRAY2BGR)
+        cv2.drawContours(self.__bubblesFound, self.__bubbleCnts, -1, (0, 255, 0), 3)
 
     def __sortContours(self):
         # sort the question contours top-to-bottom
@@ -172,23 +175,37 @@ class TrackerScanner:
         self.__bubbleCnts = sortedBubbles
     
     def __scanBubbles(self):
+        ratios = []
         self.__bubblesFilled = []
         self.__bubblesPartial = []
         self.__bubblesEmpty = []
         self.data = [[] for i in range(14)]
+        colordata = [[] for i in range(14)]
+        thresh_inv = cv2.bitwise_not(self.__thresh.copy())
         for i in range(14):
             row = self.__bubbleCnts[i]
-            for bubble in row:
+            for index, bubble in enumerate(row):
                 mask = np.zeros(self.__thresh.shape, dtype="uint8")
                 cv2.drawContours(mask, [bubble], -1, 255, -1)
                 mask = cv2.bitwise_and(self.__thresh, self.__thresh, mask=mask)
-                total = cv2.countNonZero(mask)
-                if total > 850:
-                    self.data[i].append(1)
-                    self.__bubblesFilled.append(bubble)
-                elif total > 650:
+                black = cv2.countNonZero(mask)
+
+                mask2 = np.zeros(thresh_inv.shape, dtype="uint8")
+                cv2.drawContours(mask2, [bubble], -1, 255, -1)
+                mask2 = cv2.bitwise_and(thresh_inv, thresh_inv, mask=mask2)
+                white = cv2.countNonZero(mask2)
+
+                ratio = white/black*100
+                ratios.append(ratio)
+
+                if ratio > 45:
+                    self.data[i].append(0)
+                    self.__bubblesEmpty.append(bubble)
+                elif ratio > 20:
                     self.data[i].append(0.5)
                     self.__bubblesPartial.append(bubble)
                 else:
-                    self.data[i].append(0)
-                    self.__bubblesEmpty.append(bubble)
+                    self.data[i].append(1)
+                    self.__bubblesFilled.append(bubble)
+        
+        self.__createHistogram(ratios)
