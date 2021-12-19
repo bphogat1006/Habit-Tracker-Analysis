@@ -22,36 +22,47 @@ class Tracker(db.Model):
 # CLASS DERIVED FROM:
 # https://www.pyimagesearch.com/2016/10/03/bubble-sheet-multiple-choice-scanner-and-test-grader-using-omr-python-and-opencv/
 class TrackerScanner:
+
+    # whether or not to blur image before thresholding
+    __useBlurredForThresholding = True
+
+    # init class
     def __init__(self, path):
         self.__path = path
         self.__readImage()
 
+    # runs all processing methods to extract bubble data
     def scanTracker(self):
         self.__prepareImage()
         self.__fourPointTransform()
         self.__resizeTransformedImage()
         self.__binarize()
         self.__getBubbleContours()
-        if not self.numBubblesDetected == 434:
-            raise Exception(f"Tracker was not scanned correctly. Number of bubbles detected: {self.numBubblesDetected}/434")
+        # if self.numBubblesDetected != 434:
+        #     raise Exception(f"Tracker was not scanned correctly. Number of bubbles detected: {self.numBubblesDetected}/434")
         self.__sortContours()
         self.__scanBubbles()
-        # self.__saveImage(self.__tmp, draw_contours=False)
-        self.__saveImage(self.__thresh, draw_contours=True)
+        self.__saveImage(self.__paper, draw_contours=True)
 
+    # misc methods for reading/saving/analyzing images
     def __readImage(self):
         try:
-            self.__image = cv2.imread(self.__path)
+            self.__original = cv2.imread(self.__path)
         except Exception as e:
             print(f"Error while loader tracker image to scan bubbles.\nPath: {self.__path}")
             print(e)
 
-    def __saveImage(self, image, draw_contours=True):
+    def __saveImage(self, image, filename="", draw_contours=False):
+        path = self.__path
         if draw_contours:
-            image = self.__drawContours(image)
-        cv2.imwrite(self.__path, image)
+            image = self.__drawBubbleContours(image)
+        if filename != "":
+            parts = self.__path.split(".")
+            parts[-2] += "_"+filename
+            path = '.'.join(parts)
+        cv2.imwrite(path, image)
 
-    def __drawContours(self, image):
+    def __drawBubbleContours(self, image):
         if(len(image.shape)<3):
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
         cv2.drawContours(image, self.__bubblesFilled, -1, (0, 255, 0), 3)
@@ -67,10 +78,23 @@ class TrackerScanner:
         pyplot.hist(a, bins = np.arange(minVal, maxVal, step=bucketsize))
         pyplot.savefig("histogram.jpg")
 
+    # methods for finding and scanning the bubbles
     def __prepareImage(self):
-        # convert it to grayscale, blur it slightly
+        # auto-level image
+        self.__image = self.__original.copy()
+        gray = cv2.cvtColor(self.__original, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.bilateralFilter(gray, 5, 50, 75)
+        maxLuma = min(max(blurred.flatten()), 245)
+        self.__image = cv2.bilateralFilter(self.__original, 5, 50, 75)
+        if(maxLuma < 245):
+            self.__image = self.__image.astype('float64')
+            self.__image *= 245/maxLuma
+            self.__image = self.__image.astype('uint8')
+        # get grayscale version of image
         self.__gray = cv2.cvtColor(self.__image, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.bilateralFilter(self.__gray, 5, 175, 175)
+        blurred = cv2.bilateralFilter(self.__gray, 5, 50, 75)
+        if self.__useBlurredForThresholding:
+            self.__gray = blurred.copy()
         # find edges
         self.__edged = cv2.Canny(blurred, 75, 200)
         # dilate edges slightly to assist in finding document
@@ -102,7 +126,6 @@ class TrackerScanner:
         if docCnt is None: raise Exception("No 4 point contour found")
         self.__pageContour = cv2.cvtColor(self.__edged.copy(), cv2.COLOR_GRAY2BGR)
         cv2.drawContours(self.__pageContour, [docCnt], 0, (0, 255, 0), 3)
-
         # apply a four point perspective transform to both the
         # original image and grayscale image to obtain a top-down
         # birds eye view of the paper
@@ -197,6 +220,8 @@ class TrackerScanner:
 
                 ratio = white/black*100
                 ratios.append(ratio)
+                # if 10<ratio<70:
+                #     print(i+1, index+1, round(ratio))
 
                 if ratio > 45:
                     self.data[i].append(0)
