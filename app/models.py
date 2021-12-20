@@ -38,8 +38,8 @@ class TrackerScanner:
         self.__resizeTransformedImage()
         self.__binarize()
         self.__getBubbleContours()
-        # if self.numBubblesDetected != 434:
-        #     raise Exception(f"Tracker was not scanned correctly. Number of bubbles detected: {self.numBubblesDetected}/434")
+        if self.numBubblesDetected != 434:
+            raise Exception(f"Tracker was not scanned correctly. Number of bubbles detected: {self.numBubblesDetected}/434")
         self.__sortContours()
         self.__scanBubbles()
         self.__saveImage(self.__paper, draw_contours=True)
@@ -66,7 +66,7 @@ class TrackerScanner:
         if(len(image.shape)<3):
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
         cv2.drawContours(image, self.__bubblesFilled, -1, (0, 255, 0), 3)
-        cv2.drawContours(image, self.__bubblesPartial, -1, (0, 255, 255), 3)
+        cv2.drawContours(image, self.__bubblesPartial, -1, (255, 0, 0), 3)
         cv2.drawContours(image, self.__bubblesEmpty, -1, (0, 0, 255), 3)
         return image
 
@@ -141,7 +141,7 @@ class TrackerScanner:
         # apply Otsu's thresholding method to binarize the warped
         # piece of paper
         self.__thresh = cv2.adaptiveThreshold(self.__warped, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                                cv2.THRESH_BINARY_INV, 199, 10)
+                                                cv2.THRESH_BINARY_INV, 135, 3)
         # slight adjustment with morphological operation to close any open bubble contours
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3, 3))
         self.__thresh = cv2.dilate(self.__thresh, kernel)
@@ -223,7 +223,7 @@ class TrackerScanner:
                 # if 10<ratio<70:
                 #     print(i+1, index+1, round(ratio))
 
-                if ratio > 45:
+                if ratio > 50:
                     self.data[i].append(0)
                     self.__bubblesEmpty.append(bubble)
                 elif ratio > 20:
