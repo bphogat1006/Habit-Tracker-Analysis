@@ -5,3 +5,4 @@ venv
 run.py
 app/test.py
 histogram.jpg
+app/static/uploads/*

@@ -27,20 +27,20 @@ def upload_file():
     filename = secure_filename(image.filename)
     name = filename.split(".")[0]
     extension = filename.split(".")[1]
-    filename = name+"_"+randomString(5)+"."+extension
+    filename = name+"_"+genRandomString(10)+"."+extension
     if extension not in app.config["ALLOWED_EXTENSIONS"]:
         flash('image file type "'+extension+'" not supported')
         return redirect("/upload")
     path = os.path.join(app.root_path, app.config["IMAGE_UPLOADS_PATH"], filename)
     image.save(path)
-    return redirect("display/"+filename)
+    return redirect("edit/tracker/"+filename)
 
-@app.route("/uploads/<path:filename>")
+@app.route("/uploads/<path:filename>", methods = ['GET'])
 def get_image(filename):
     return send_from_directory(app.config["IMAGE_UPLOADS_PATH"], filename)
 
-@app.route("/display/<filename>", methods = ['GET'])
-def display_image(filename):
+@app.route("/edit/tracker/<filename>", methods = ['GET'])
+def edit_tracker(filename):
     path = os.path.join(app.root_path, app.config["IMAGE_UPLOADS_PATH"], filename)
     if(not os.path.isfile(path)):
         flash("image '" + filename + "' does not exist")
@@ -66,9 +66,9 @@ def display_image(filename):
             totals.append(numDaysInMonth)
     table = list()
     for i in range(14):
-        activityName = "click_to_edit_activity_name"
+        activityName = "Click_to_edit_activity_name"
         if totals[i]==numDaysInMonth*2:
-            activityName = "click_to_edit_activity_1 / click_to_edit_activity_2"
+            activityName = "Click_to_edit_activity_1 / click_to_edit_activity_2"
         table.append({
             "activityName": activityName,
             "timesCompleted": filled[i],
@@ -76,15 +76,13 @@ def display_image(filename):
             "ratio": str(round(filled[i]/totals[i]*100))+"%"
         })
 
-    return render_template("display.html", filename=filename, table=table)
+    return render_template("editTracker.html", filename=filename, table=table)
 
 @app.errorhandler(Exception)
 def http_error_handler(error):
     return render_template("error.html")
 
-def randomString(len):
+def genRandomString(len):
     chars = 'abcdefghijklmnopqrstuvwxyz123456789'
     output = ''
-    for i in range(len):
-        output+=random.choice(chars)
-    return output
+    return ''.join(random.choice(chars) for i in range(len))

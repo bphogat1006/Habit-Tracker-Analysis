@@ -5,6 +5,10 @@
     Uploaded Image
 {% endblock %}
 
+{% block head %}
+    <script src="https://kit.fontawesome.com/5d2140906c.js" crossorigin="anonymous"></script>
+{% endblock %}
+
 {% block body %}
 
     <h1 class="display-2">Uploaded image</h1>
@@ -13,25 +17,26 @@
 
     <img id="uploaded-image" class="my-4" src="{{url_for('get_image', filename=filename)}}" style="width:100%;"></img>
 
-    <button id="tmpbtn" class="btn btn-lg btn-primary mb-3">Save Changes</button>
+    <button id="tmpbtn" class="btn btn-lg btn-primary mb-3">Save Tracker</button>
     
-    <table class="table">
+    <table class="table table-hover align-middle">
         <tr>
             <th>Activity Name</th>
             <th>Times completed</th>
             <th>Completion Goal</th>
             <th>Percent Finished</th>
+            <th></th>
         </tr>
         {% for row in table %}
         <tr>
-            <td>{{ editable(row.activityName) }}</td>
+            <td><b>{{ editable(row.activityName) }}</b></td>
             <td>{{ editable(row.timesCompleted) }}</td>
             <td>{{ editable(row.goal) }}</td>
             <td>{{ editable(row.ratio) }}</td>
+            <td><i class="btn fas fa-trash"></i></td>
         </tr>
         {% endfor %}
     </table>
-
 
     <script>
         $(() => {
