@@ -14,26 +14,25 @@ def view_home():
 
     return render_template("home.html")
 
-@app.route("/upload", methods=['GET'])
+@app.route("/upload", methods=['GET', 'POST'])
 def view_upload_page():
-    return render_template("upload.html")
-
-@app.route("/uploader", methods = ['POST'])
-def upload_file():
-    image = request.files['image']
-    if image.filename == '':
-        flash('No image selected')
-        return redirect("/upload")
-    filename = secure_filename(image.filename)
-    name = filename.split(".")[0]
-    extension = filename.split(".")[1]
-    filename = genRandomString(8)+"."+extension
-    if extension not in app.config["ALLOWED_EXTENSIONS"]:
-        flash('image file type "'+extension+'" not supported')
-        return redirect("/upload")
-    path = os.path.join(app.root_path, app.config["IMAGE_UPLOADS_PATH"], filename)
-    image.save(path)
-    return redirect("edit/tracker/"+filename)
+    if request.method == 'GET':
+        return render_template("upload.html")
+    else:
+        image = request.files['image']
+        if image.filename == '':
+            flash('No image selected')
+            return redirect("/upload")
+        filename = secure_filename(image.filename)
+        name = filename.split(".")[0]
+        extension = filename.split(".")[1]
+        filename = genRandomString(8)+"."+extension
+        if extension not in app.config["ALLOWED_EXTENSIONS"]:
+            flash('image file type "'+extension+'" not supported')
+            return redirect("/upload")
+        path = os.path.join(app.root_path, app.config["IMAGE_UPLOADS_PATH"], filename)
+        image.save(path)
+        return redirect("edit/tracker/"+filename)
 
 @app.route("/uploads/<path:filename>", methods = ['GET'])
 def get_image(filename):
