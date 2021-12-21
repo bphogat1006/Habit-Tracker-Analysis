@@ -15,7 +15,7 @@ def view_home():
     return render_template("home.html")
 
 @app.route("/upload", methods=['GET', 'POST'])
-def view_upload_page():
+def upload():
     if request.method == 'GET':
         return render_template("upload.html")
     else:
@@ -42,7 +42,7 @@ def get_image(filename):
 def edit_tracker(filename):
     path = os.path.join(app.root_path, app.config["IMAGE_UPLOADS_PATH"], filename)
     if(not os.path.isfile(path)):
-        flash("image '" + filename + "' does not exist")
+        flash("tracker '" + filename + "' does not exist")
 
     tracker = TrackerScanner(path)
     try:
