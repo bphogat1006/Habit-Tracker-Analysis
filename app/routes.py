@@ -27,7 +27,7 @@ def upload_file():
     filename = secure_filename(image.filename)
     name = filename.split(".")[0]
     extension = filename.split(".")[1]
-    filename = name+"_"+genRandomString(10)+"."+extension
+    filename = genRandomString(8)+"."+extension
     if extension not in app.config["ALLOWED_EXTENSIONS"]:
         flash('image file type "'+extension+'" not supported')
         return redirect("/upload")
@@ -54,26 +54,26 @@ def edit_tracker(filename):
     
     grid = tracker.data
     # activityNames = get_from_db
-    totals = []
-    filled = []
+    timesCompleted = []
+    completionGoal = []
     numDaysInMonth = 31 # FIX AUTOMATICALLY
     for row in grid:
         if 0.5 in row:
-            filled.append(int(sum(row)*2))
-            totals.append(numDaysInMonth*2)
+            timesCompleted.append(int(sum(row)*2))
+            completionGoal.append(numDaysInMonth*2)
         else: 
-            filled.append(sum(row))
-            totals.append(numDaysInMonth)
+            timesCompleted.append(sum(row))
+            completionGoal.append(numDaysInMonth)
     table = list()
     for i in range(14):
         activityName = "Click_to_edit_activity_name"
-        if totals[i]==numDaysInMonth*2:
-            activityName = "Click_to_edit_activity_1 / click_to_edit_activity_2"
+        if completionGoal[i]==numDaysInMonth*2:
+            activityName = "Click_to_edit_activity_1 / Click_to_edit_activity_2"
         table.append({
             "activityName": activityName,
-            "timesCompleted": filled[i],
-            "goal": totals[i],
-            "ratio": str(round(filled[i]/totals[i]*100))+"%"
+            "timesCompleted": timesCompleted[i],
+            "completionGoal": completionGoal[i],
+            "percentFinished": str(round(timesCompleted[i]/completionGoal[i]*100))+"%"
         })
 
     return render_template("editTracker.html", filename=filename, table=table)

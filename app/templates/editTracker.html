@@ -17,12 +17,12 @@
 
     <img id="uploaded-image" class="my-4" src="{{url_for('get_image', filename=filename)}}" style="width:100%;"></img>
 
-    <button id="tmpbtn" class="btn btn-lg btn-primary mb-3">Save Tracker</button>
+    <button id="save" class="btn btn-lg btn-primary mb-3">Save Tracker</button>
     
-    <table class="table table-hover align-middle">
+    <table id="table" class="table table-hover align-middle">
         <tr>
             <th>Activity Name</th>
-            <th>Times completed</th>
+            <th>Times Completed</th>
             <th>Completion Goal</th>
             <th>Percent Finished</th>
             <th></th>
@@ -31,27 +31,80 @@
         <tr>
             <td><b>{{ editable(row.activityName) }}</b></td>
             <td>{{ editable(row.timesCompleted) }}</td>
-            <td>{{ editable(row.goal) }}</td>
-            <td>{{ editable(row.ratio) }}</td>
-            <td><i class="btn fas fa-trash"></i></td>
+            <td>{{ editable(row.completionGoal) }}</td>
+            <td>{{ editable(row.percentFinished) }}</td>
+            <td><i class="removeRowButton btn fas fa-trash"></i></td>
         </tr>
         {% endfor %}
     </table>
 
     <script>
         $(() => {
+            // set delete row click listeners
+            $table = $("#table")
+            $(document).on('click', '.removeRowButton', function() {
+                $(this).closest('tr').remove()
+            })
 
-            var editables = $(".editable").map(function() {
-                return this;
-            }).get();
+            // set editable changed listeners
+            $(".editable").map(function() {
+                $(this).on('input', function() {
+                    recalculatePercentFinished()
+                })
+            })
+            function recalculatePercentFinished() {
+                $table.find('tr').each(function (i, el) {
+                    if(i==0) return
+                    var $tds = $(this).find('td')
+                    var timesCompleted = $tds.eq(1).text().trim()
+                    var completionGoal = $tds.eq(2).text().trim()
+                    var percentFinished = Math.round(timesCompleted/completionGoal*100)+"%"
+                    $tds.eq(3).text(percentFinished)
+                })
+            }
 
-            $("#tmpbtn").click(function() {
-                console.log("click")
+            // save table function
+            function saveTable() {
+                data = []
+                // capitalize activity names
                 $(".editable").map(function() {
                     $(this).text(toTitleCase($(this).text()));
                 })
+                // save table data
+                var failed = false
+                $table.find('tr').each(function (i, el) {
+                    // skip table header
+                    if(i==0) return
+                    // get data from row
+                    var $tds = $(this).find('td')
+                    var row = {
+                        activityName: $tds.eq(0).text().trim(),
+                        timesCompleted: $tds.eq(1).text().trim(),
+                        completionGoal: $tds.eq(2).text().trim(),
+                        percentFinished: $tds.eq(3).text().trim()
+                    }
+                    // check no cell is empty
+                    $.each(row, function(key, value) {
+                        if(value == "") {
+                            alert("Failed. Empty cell for activity "+i)
+                            failed = true
+                        }
+                    });
+                    // check percent completion isn't > 100%
+                    if(parseInt(row.percentFinished.split('%')[0]) > 100) {
+                        alert('Failed. Percent Completed for activity '+i+' is illegal: '+row.percentFinished)
+                        failed = true
+                    }
+                    data.push(row)
+                })
+                // ajax send data
+                if(!failed) {
+                    console.log(data)
+                }
+            }
+            $("#save").click(function() {
+                saveTable();
             })
-
         })
         
         function toTitleCase(str) {
