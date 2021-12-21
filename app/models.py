@@ -70,12 +70,16 @@ class TrackerScanner:
         cv2.drawContours(image, self.__bubblesEmpty, -1, (0, 0, 255), 3)
         return image
 
-    def __createHistogram(self, data, bucketsize=1):
+    def __createHistogram(self, data, bucketsize=1, logScaleX=False, logScaleY=False):
         minVal = min(data)
         maxVal = max(data)
         a = np.array(data)
         pyplot.title("histogram")
         pyplot.hist(a, bins = np.arange(minVal, maxVal, step=bucketsize))
+        if logScaleX:
+            pyplot.xscale('log')
+        if logScaleY:
+            pyplot.yscale('log')
         pyplot.savefig("histogram.jpg")
 
     # methods for finding and scanning the bubbles
@@ -198,39 +202,37 @@ class TrackerScanner:
         self.__bubbleCnts = sortedBubbles
     
     def __scanBubbles(self):
-        ratios = []
+        histogram = []
         self.__bubblesFilled = []
         self.__bubblesPartial = []
         self.__bubblesEmpty = []
         self.data = [[] for i in range(14)]
         colordata = [[] for i in range(14)]
         thresh_inv = cv2.bitwise_not(self.__thresh.copy())
-        for i in range(14):
-            row = self.__bubbleCnts[i]
-            for index, bubble in enumerate(row):
+        for activityIndex in range(14):
+            activityBubbles = self.__bubbleCnts[activityIndex]
+            for day, bubble in enumerate(activityBubbles):
                 mask = np.zeros(self.__thresh.shape, dtype="uint8")
                 cv2.drawContours(mask, [bubble], -1, 255, -1)
                 mask = cv2.bitwise_and(self.__thresh, self.__thresh, mask=mask)
-                black = cv2.countNonZero(mask)
+                filledArea = cv2.countNonZero(mask)+1
 
                 mask2 = np.zeros(thresh_inv.shape, dtype="uint8")
                 cv2.drawContours(mask2, [bubble], -1, 255, -1)
                 mask2 = cv2.bitwise_and(thresh_inv, thresh_inv, mask=mask2)
-                white = cv2.countNonZero(mask2)
+                unfilledArea = cv2.countNonZero(mask2)+1
 
-                ratio = white/black*100
-                ratios.append(ratio)
-                # if 10<ratio<70:
-                #     print(i+1, index+1, round(ratio))
+                ratioFilled = unfilledArea/filledArea*100
+                histogram.append(ratioFilled)
 
-                if ratio > 50:
-                    self.data[i].append(0)
+                if ratioFilled > 55:
+                    self.data[activityIndex].append(0)
                     self.__bubblesEmpty.append(bubble)
-                elif ratio > 20:
-                    self.data[i].append(0.5)
+                elif ratioFilled > 20:
+                    self.data[activityIndex].append(0.5)
                     self.__bubblesPartial.append(bubble)
                 else:
-                    self.data[i].append(1)
+                    self.data[activityIndex].append(1)
                     self.__bubblesFilled.append(bubble)
         
-        self.__createHistogram(ratios)
+        self.__createHistogram(histogram, bucketsize=1, logScaleY=True)
