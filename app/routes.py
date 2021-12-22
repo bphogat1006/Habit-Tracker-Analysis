@@ -1,7 +1,10 @@
-from flask import render_template, request, redirect, url_for, flash, send_from_directory, jsonify
+from calendar import month
+from flask import render_template, request, redirect, url_for, flash, send_from_directory, jsonify, abort
 from flask.helpers import make_response
+from flask.scaffold import F
 from app import app, db
-from app.models import Tracker, TrackerScanner
+from app.models import Tracker
+from app.trackerScanner import TrackerScanner
 from werkzeug.utils import secure_filename
 import os
 import json
@@ -13,6 +16,7 @@ def create_db():
 
 @app.route("/", methods=['GET'])
 def view_home():
+
     return render_template("dashboard.html", name = request.cookies.get("username"))
 
 @app.route("/login", methods=['GET', 'POST'])
@@ -33,6 +37,10 @@ def login():
             
             return redirect("/")
 
+@app.route("/images/<path:filename>", methods = ['GET'])
+def get_image(filename):
+    return send_from_directory(app.config["IMAGE_UPLOADS_PATH"], filename)
+
 @app.route("/upload/<type>", methods=['GET', 'POST'])
 def upload(type):
     if request.method == 'GET':
@@ -40,10 +48,27 @@ def upload(type):
             return render_template("uploadTracker.html")
     else:
         if type == "tracker":
-            data = json.loads(request.data)
-            print(data)
-            flash("Tracker saved successfully")
-            return jsonify(status="success")
+            try:
+                data = json.loads(request.data)
+                tracker = Tracker(
+                    user = str(data['user']),
+                    filename = str(data.get('filename')),
+                    month = str(data.get('month')),
+                    year = str(data.get('year')),
+                    percentFinished = str(data.get('percentFinished')),
+                    trackerData = json.dumps(data.get('trackerData'))
+                )
+                db.session.add(tracker)
+                db.session.commit()
+
+                flash("Tracker saved successfully")
+                return jsonify(message='Success'),200
+            except Exception as e:
+                flash("Tracker failed to save")
+                flash(e)
+                print(e)
+                return jsonify(message=e),400
+                
 
         if type == "img":
             image = request.files['image']
@@ -60,10 +85,6 @@ def upload(type):
             path = os.path.join(app.root_path, app.config["IMAGE_UPLOADS_PATH"], filename)
             image.save(path)
             return redirect(url_for('edit_tracker', filename=filename))
-
-@app.route("/images/<path:filename>", methods = ['GET'])
-def get_image(filename):
-    return send_from_directory(app.config["IMAGE_UPLOADS_PATH"], filename)
 
 @app.route("/edit/tracker/<filename>", methods = ['GET'])
 def edit_tracker(filename):
@@ -106,6 +127,10 @@ def edit_tracker(filename):
 
 @app.errorhandler(Exception)
 def http_error_handler(error):
+    return render_template("error.html")
+
+@app.route("/error", methods = ['GET'])
+def error():
     return render_template("error.html")
 
 def genRandomString(len):

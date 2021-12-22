@@ -12,7 +12,9 @@
 	{% include "flash.html" %}
 	
 	<h1 class="display-6 mb-3">Hi {{ name }}! Upload a new tracker below to see how well you kept up with your habits this month!</h1>
-	<form class="input-group" action="/upload/tracker" method="get">
+	<form class="input-group mb-3" action="/upload/tracker" method="get">
 		<input class="btn btn-lg btn-primary" type="submit" value="Upload New Tracker" style="width: 100%;"/>
 	</form>
+
+	<h1 class="display-2">Dashboard</h1>
 {% endblock %}

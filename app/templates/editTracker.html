@@ -63,7 +63,7 @@
             <th>Percent Finished</th>
             <th></th>
         </tr>
-        {% for row in table %}
+        {% for row in table if not row.timesCompleted==0 %}
         <tr>
             <td><b>{{ editable(row.activityName) }}</b></td>
             <td>{{ editable(row.timesCompleted) }}</td>
@@ -144,8 +144,8 @@
                     filename: filename,
                     month: $monthPicker.text(),
                     year: $yearPicker.text(),
-                    trackerData: [],
-                    percentFinished: calculateTotalPercentFinished()
+                    percentFinished: calculateTotalPercentFinished(),
+                    trackerData: []
                 }
                 // check if month and year are valid
                 if(data.month.trim() == "Month" || data.year.trim() == "Year") {
@@ -167,6 +167,7 @@
                         timesCompleted: $tds.eq(1).text().trim(),
                         completionGoal: $tds.eq(2).text().trim()
                     }
+                    percentFinished = $tds.eq(3).text().trim()
                     // check no cell is empty
                     $.each(row, function(key, value) {
                         if(value == "") {
@@ -175,8 +176,8 @@
                         }
                     });
                     // check percent completion isn't > 100%
-                    if(parseInt(row.percentFinished.split('%')[0]) > 100) {
-                        alert('Failed. Percent Completed for activity '+i+' is illegal: '+row.percentFinished)
+                    if(parseInt(percentFinished.split('%')[0]) > 100) {
+                        alert('Failed. Percent Completed for activity '+i+' is illegal: '+percentFinished)
                         failed = true
                     }
                     data.trackerData.push(row)
@@ -197,6 +198,9 @@
                         contentType: false,
                         success: function(response) {
                             window.location.href = "/";
+                        },
+                        error: function(response) {
+                            window.location.href = "/error"
                         }
                     })
                 }
