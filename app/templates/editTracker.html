@@ -23,7 +23,7 @@
 
         <div class="btn-group">
             <button class="btn btn-lg btn-primary dropdown-toggle" type="button" id="monthPicker" data-bs-toggle="dropdown" aria-expanded="false">
-                  Month
+                  {{ month | default('Month') }}
             </button>
             <ul class="dropdown-menu menu-scroll" aria-labelledby="dropdownMenu2">
                 <li><button class="dropdown-item month" type="button">January</button></li>
@@ -43,7 +43,7 @@
     
         <div class="btn-group">
             <button class="btn btn-lg btn-primary dropdown-toggle" type="button" id="yearPicker" data-bs-toggle="dropdown" aria-expanded="false">
-                  Year
+                  {{ year | default('Year') }}
             </button>
             <ul class="dropdown-menu menu-scroll" aria-labelledby="dropdownMenu2">
                 <li><button class="dropdown-item year" type="button">2021</button></li>
@@ -113,10 +113,16 @@
             // save table function
             function saveTable() {
                 var failed = false
+                // create trackerdata object that will be sent to database
+                var username = document.cookie.split("=")[1]
+                var filename = window.location.pathname.split("/")
+                filename = filename[filename.length-1]
                 data = {
-                    table: [],
+                    user: username,
+                    filename: filename,
                     month: $monthPicker.text(),
-                    year: $yearPicker.text()
+                    year: $yearPicker.text(),
+                    trackerData: []
                 }
                 // check if month and year are valid
                 if(data.month.trim() == "Month" || data.year.trim() == "Year") {
@@ -151,16 +157,27 @@
                         alert('Failed. Percent Completed for activity '+i+' is illegal: '+row.percentFinished)
                         failed = true
                     }
-                    data.table.push(row)
+                    data.trackerData.push(row)
                 })
                 // ajax send data
                 if(!failed) {
-                    console.log(data)
-
+                    return JSON.stringify(data)
                 }
             }
             $("#save").click(function() {
-                saveTable();
+                data = saveTable();
+                if(data != null) {
+                    $.ajax({
+                        type: "POST",
+                        url: "/upload/tracker",
+                        data: data,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            window.location.href = "/dashboard";
+                        }
+                    })
+                }
             })
         })
         

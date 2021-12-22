@@ -1,7 +1,6 @@
 from enum import unique
 from flask.sessions import NullSession
 from app import app, db
-import json
 from calendar import month_name
 import cv2
 import imutils
@@ -16,10 +15,11 @@ class Tracker(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date_added = db.Column(db.DateTime, nullable=False)
     # Tracker data
+    user = db.Column(db.String(20), nullable=False)
+    filename = db.Column(db.String(5+app.config["IMAGE_NAME_LENGTH"]), nullable=False, unique=True)
     month = db.Column(db.Integer, nullable=False)
     year = db.Column(db.Integer, nullable=False)
-    data = db.Column(db.String(1000), unique=True, nullable=False)
-    filename = db.Column(db.String(5+app.config["IMAGE_NAME_LENGTH"]), nullable=False)
+    trackerData = db.Column(db.String(5000), nullable=False)
 
     def intToMonth(self):
         month_name[self.month]

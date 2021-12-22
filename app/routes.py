@@ -1,9 +1,10 @@
-from flask import render_template, request, redirect, url_for, flash, send_from_directory
+from flask import render_template, request, redirect, url_for, flash, send_from_directory, jsonify
 from flask.helpers import make_response
 from app import app, db
 from app.models import Tracker, TrackerScanner
 from werkzeug.utils import secure_filename
 import os
+import json
 import random
 
 @app.before_first_request
@@ -32,27 +33,39 @@ def login():
             
             return redirect("/")
 
-@app.route("/upload", methods=['GET', 'POST'])
-def upload():
-    if request.method == 'GET':
-        return render_template("upload.html")
-    else:
-        image = request.files['image']
-        if image.filename == '':
-            flash('No image selected')
-            return redirect("/upload")
-        filename = secure_filename(image.filename)
-        name = filename.split(".")[0]
-        extension = filename.split(".")[1]
-        filename = genRandomString(app.config["IMAGE_NAME_LENGTH"])+"."+extension
-        if extension not in app.config["ALLOWED_EXTENSIONS"]:
-            flash('image file type "'+extension+'" not supported')
-            return redirect("/upload")
-        path = os.path.join(app.root_path, app.config["IMAGE_UPLOADS_PATH"], filename)
-        image.save(path)
-        return redirect("edit/tracker/"+filename)
+@app.route("/dashboard", methods=['GET'])
+def dashboard():
+    return render_template("dashboard.html")
 
-@app.route("/uploads/<path:filename>", methods = ['GET'])
+@app.route("/upload/<type>", methods=['GET', 'POST'])
+def upload(type):
+    if request.method == 'GET':
+        if type == "tracker":
+            return render_template("uploadTracker.html")
+    else:
+        if type == "tracker":
+            data = json.loads(request.data)
+            print(data)
+            flash("Tracker saved successfully")
+            return jsonify(status="success")
+
+        if type == "img":
+            image = request.files['image']
+            if image.filename == '':
+                flash('No image selected')
+                return redirect("/upload/tracker")
+            filename = secure_filename(image.filename)
+            name = filename.split(".")[0]
+            extension = filename.split(".")[1]
+            filename = genRandomString(app.config["IMAGE_NAME_LENGTH"])+"."+extension
+            if extension not in app.config["ALLOWED_EXTENSIONS"]:
+                flash('image file type "'+extension+'" not supported')
+                return redirect("/upload/tracker")
+            path = os.path.join(app.root_path, app.config["IMAGE_UPLOADS_PATH"], filename)
+            image.save(path)
+            return redirect(url_for('edit_tracker', filename=filename))
+
+@app.route("/images/<path:filename>", methods = ['GET'])
 def get_image(filename):
     return send_from_directory(app.config["IMAGE_UPLOADS_PATH"], filename)
 
@@ -62,6 +75,8 @@ def edit_tracker(filename):
     if(not os.path.isfile(path)):
         flash("tracker '" + filename + "' does not exist")
 
+    # query db for tracker matching the filename and username
+
     tracker = TrackerScanner(path)
     try:
         tracker.scanTracker()
@@ -69,19 +84,18 @@ def edit_tracker(filename):
         print(e)
         flash(e)
     
-    grid = tracker.data
-    # activityNames = get_from_db
+    data = tracker.data
     timesCompleted = []
     completionGoal = []
     numDaysInMonth = 31 # FIX AUTOMATICALLY
-    for row in grid:
+    for row in data:
         if 0.5 in row:
             timesCompleted.append(int(sum(row)*2))
             completionGoal.append(numDaysInMonth*2)
         else: 
             timesCompleted.append(sum(row))
             completionGoal.append(numDaysInMonth)
-    table = list()
+    table = []
     for i in range(14):
         activityName = "Click_to_edit_activity_name"
         if completionGoal[i]==numDaysInMonth*2:
