@@ -10,6 +10,7 @@
 {% endblock %}
 
 {% block body %}
+	{% include "logout.html" %}
 
     <h1 class="display-2">Uploaded image</h1>
 
@@ -17,7 +18,39 @@
 
     <img id="uploaded-image" class="my-4" src="{{url_for('get_image', filename=filename)}}" style="width:100%;"></img>
 
-    <button id="save" class="btn btn-lg btn-primary mb-3">Save Tracker</button>
+    <div id="buttons" class="mb-3">
+        <button id="save" class="btn btn-lg btn-primary">Save Tracker</button>
+
+        <div class="btn-group">
+            <button class="btn btn-lg btn-primary dropdown-toggle" type="button" id="monthPicker" data-bs-toggle="dropdown" aria-expanded="false">
+                  Month
+            </button>
+            <ul class="dropdown-menu menu-scroll" aria-labelledby="dropdownMenu2">
+                <li><button class="dropdown-item month" type="button">January</button></li>
+                <li><button class="dropdown-item month" type="button">February</button></li>
+                <li><button class="dropdown-item month" type="button">March</button></li>
+                <li><button class="dropdown-item month" type="button">April</button></li>
+                <li><button class="dropdown-item month" type="button">May</button></li>
+                <li><button class="dropdown-item month" type="button">June</button></li>
+                <li><button class="dropdown-item month" type="button">July</button></li>
+                <li><button class="dropdown-item month" type="button">August</button></li>
+                <li><button class="dropdown-item month" type="button">September</button></li>
+                <li><button class="dropdown-item month" type="button">October</button></li>
+                <li><button class="dropdown-item month" type="button">November</button></li>
+                <li><button class="dropdown-item month" type="button">December</button></li>
+            </ul>
+        </div>
+    
+        <div class="btn-group">
+            <button class="btn btn-lg btn-primary dropdown-toggle" type="button" id="yearPicker" data-bs-toggle="dropdown" aria-expanded="false">
+                  Year
+            </button>
+            <ul class="dropdown-menu menu-scroll" aria-labelledby="dropdownMenu2">
+                <li><button class="dropdown-item year" type="button">2021</button></li>
+                <li><button class="dropdown-item year" type="button">2022</button></li>
+            </ul>
+        </div>
+    </div>
     
     <table id="table" class="table table-hover align-middle">
         <tr>
@@ -40,6 +73,20 @@
 
     <script>
         $(() => {
+            // get month and year from dropwdowns
+            $monthPicker = $("#monthPicker")
+            $yearPicker = $("#yearPicker")
+			$("button.month").map(function () {
+				$(this).click(function() {
+                    $monthPicker.text($(this).text())
+				})
+			})
+			$("button.year").map(function () {
+				$(this).click(function() {
+                    $yearPicker.text($(this).text())
+				})
+			})
+
             // set delete row click listeners
             $table = $("#table")
             $(document).on('click', '.removeRowButton', function() {
@@ -65,13 +112,21 @@
 
             // save table function
             function saveTable() {
-                data = []
+                var failed = false
+                data = {
+                    table: [],
+                    month: $monthPicker.text(),
+                    year: $yearPicker.text()
+                }
+                // check if month and year are valid
+                if(data.month.trim() == "Month" || data.year.trim() == "Year") {
+                    failed = true
+                }
                 // capitalize activity names
                 $(".editable").map(function() {
                     $(this).text(toTitleCase($(this).text()));
                 })
                 // save table data
-                var failed = false
                 $table.find('tr').each(function (i, el) {
                     // skip table header
                     if(i==0) return
@@ -95,11 +150,12 @@
                         alert('Failed. Percent Completed for activity '+i+' is illegal: '+row.percentFinished)
                         failed = true
                     }
-                    data.push(row)
+                    data.table.push(row)
                 })
                 // ajax send data
                 if(!failed) {
                     console.log(data)
+
                 }
             }
             $("#save").click(function() {

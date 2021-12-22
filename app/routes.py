@@ -1,4 +1,5 @@
 from flask import render_template, request, redirect, url_for, flash, send_from_directory
+from flask.helpers import make_response
 from app import app, db
 from app.models import Tracker, TrackerScanner
 from werkzeug.utils import secure_filename
@@ -11,8 +12,25 @@ def create_db():
 
 @app.route("/", methods=['GET'])
 def view_home():
-
     return render_template("home.html")
+
+@app.route("/login", methods=['GET', 'POST'])
+def login():
+    if request.method == 'GET':
+        response = make_response(render_template("login.html"))
+        response.set_cookie('username', expires=0)
+        return response
+    else:
+        if "username" not in request.cookies or request.cookies.get("username") == '':
+            flash("Please enter a username")
+            return render_template("login.html")
+        else:
+            username = request.cookies.get("username")
+            if(username != "Bhavya" and username != "Abby"):
+                flash(f"No user {username}")
+                return render_template("login.html")
+            
+            return redirect("/")
 
 @app.route("/upload", methods=['GET', 'POST'])
 def upload():
@@ -26,7 +44,7 @@ def upload():
         filename = secure_filename(image.filename)
         name = filename.split(".")[0]
         extension = filename.split(".")[1]
-        filename = genRandomString(8)+"."+extension
+        filename = genRandomString(app.config["IMAGE_NAME_LENGTH"])+"."+extension
         if extension not in app.config["ALLOWED_EXTENSIONS"]:
             flash('image file type "'+extension+'" not supported')
             return redirect("/upload")

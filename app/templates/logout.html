@@ -1,0 +1,18 @@
+<div class="d-flex justify-content-end">
+    <form id="logout-form" class="input-group" action="/login" method="get" onsubmit="logout()" style="width: fit-content;">
+		<input class="btn btn-lg btn-primary" type="submit" value="Logout"/>
+	</form>
+</div>
+
+<script>
+    // auto logout if no username in cookies
+    $(() => {
+        if(document.cookie.indexOf('username=') == -1) {
+            $("#logout-form").submit()
+        }
+    })
+    // when logout clicked, delete username cookie
+    function logout() {
+        document.cookie = "username=;path=/;expires=Thu, 01 Jan 1970 00:00:01 GMT"
+    }
+</script>

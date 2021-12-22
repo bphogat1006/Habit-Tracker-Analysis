@@ -1,5 +1,7 @@
+from enum import unique
+from flask.sessions import NullSession
 from app import app, db
-import os
+import json
 from calendar import month_name
 import cv2
 import imutils
@@ -10,27 +12,28 @@ from matplotlib import pyplot
 
 
 class Tracker(db.Model):
+    # metadata
     id = db.Column(db.Integer, primary_key=True)
-    datecreated = db.Column(db.DateTime, nullable=False)
+    date_added = db.Column(db.DateTime, nullable=False)
+    # Tracker data
     month = db.Column(db.Integer, nullable=False)
     year = db.Column(db.Integer, nullable=False)
-    filename = db.Column(db.String(255), nullable=False)
+    data = db.Column(db.String(1000), unique=True, nullable=False)
+    filename = db.Column(db.String(5+app.config["IMAGE_NAME_LENGTH"]), nullable=False)
 
-    def getMonth(self):
+    def intToMonth(self):
         month_name[self.month]
 
 # CLASS DERIVED FROM:
 # https://www.pyimagesearch.com/2016/10/03/bubble-sheet-multiple-choice-scanner-and-test-grader-using-omr-python-and-opencv/
 class TrackerScanner:
-
     # whether or not to blur image before thresholding
     __useBlurredForThresholding = True
-
+    
     # init class
     def __init__(self, path):
         self.__path = path
         self.__readImage()
-
     # runs all processing methods to extract bubble data
     def scanTracker(self):
         self.__prepareImage()
@@ -51,7 +54,6 @@ class TrackerScanner:
         except Exception as e:
             print(f"Error while loader tracker image to scan bubbles.\nPath: {self.__path}")
             print(e)
-
     def __saveImage(self, image, filename="", draw_contours=False):
         path = self.__path
         if draw_contours:
@@ -61,7 +63,6 @@ class TrackerScanner:
             parts[-2] += "_"+filename
             path = '.'.join(parts)
         cv2.imwrite(path, image)
-
     def __drawBubbleContours(self, image):
         if(len(image.shape)<3):
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
@@ -69,7 +70,6 @@ class TrackerScanner:
         cv2.drawContours(image, self.__bubblesPartial, -1, (255, 0, 0), 3)
         cv2.drawContours(image, self.__bubblesEmpty, -1, (0, 0, 255), 3)
         return image
-
     def __createHistogram(self, data, bucketsize=1, logScaleX=False, logScaleY=False):
         minVal = min(data)
         maxVal = max(data)
@@ -104,7 +104,6 @@ class TrackerScanner:
         # dilate edges slightly to assist in finding document
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3, 3))
         self.__edged = cv2.dilate(self.__edged, kernel)
-
     def __fourPointTransform(self):	
         # find contours in the edge map, then initialize
         # the contour that corresponds to the document
@@ -127,7 +126,7 @@ class TrackerScanner:
                 if len(approx) == 4:
                     docCnt = approx
                     break
-        if docCnt is None: raise Exception("No 4 point contour found")
+        if docCnt is None: raise Exception("No document found")
         self.__pageContour = cv2.cvtColor(self.__edged.copy(), cv2.COLOR_GRAY2BGR)
         cv2.drawContours(self.__pageContour, [docCnt], 0, (0, 255, 0), 3)
         # apply a four point perspective transform to both the
@@ -135,12 +134,10 @@ class TrackerScanner:
         # birds eye view of the paper
         self.__paper = four_point_transform(self.__image, docCnt.reshape(4, 2))
         self.__warped = four_point_transform(self.__gray, docCnt.reshape(4, 2))
-
     def __resizeTransformedImage(self):
         dim = (2000, 1545)
         self.__paper = cv2.resize(self.__paper, dim, interpolation = cv2.INTER_AREA)
         self.__warped = cv2.resize(self.__warped, dim, interpolation = cv2.INTER_AREA)
-
     def __binarize(self):
         # apply Otsu's thresholding method to binarize the warped
         # piece of paper
@@ -149,7 +146,6 @@ class TrackerScanner:
         # slight adjustment with morphological operation to close any open bubble contours
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3, 3))
         self.__thresh = cv2.dilate(self.__thresh, kernel)
-
     def __getBubbleContours(self):
         # find contours in the thresholded image, then initialize
         # the list of contours that correspond to bubbles
@@ -185,7 +181,6 @@ class TrackerScanner:
         self.numBubblesDetected = len(self.__bubbleCnts)
         self.__bubblesFound = cv2.cvtColor(self.__thresh.copy(), cv2.COLOR_GRAY2BGR)
         cv2.drawContours(self.__bubblesFound, self.__bubbleCnts, -1, (0, 255, 0), 3)
-
     def __sortContours(self):
         # sort the question contours top-to-bottom
         self.__bubbleCnts = contours.sort_contours(self.__bubbleCnts,
@@ -200,7 +195,6 @@ class TrackerScanner:
             row = contours.sort_contours(row, method="left-to-right")[0]
             sortedBubbles.append(row)
         self.__bubbleCnts = sortedBubbles
-    
     def __scanBubbles(self):
         histogram = []
         self.__bubblesFilled = []
