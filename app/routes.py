@@ -13,7 +13,7 @@ def create_db():
 
 @app.route("/", methods=['GET'])
 def view_home():
-    return render_template("home.html", name = request.cookies.get("username"))
+    return render_template("dashboard.html", name = request.cookies.get("username"))
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
@@ -32,10 +32,6 @@ def login():
                 return render_template("login.html")
             
             return redirect("/")
-
-@app.route("/dashboard", methods=['GET'])
-def dashboard():
-    return render_template("dashboard.html")
 
 @app.route("/upload/<type>", methods=['GET', 'POST'])
 def upload(type):
@@ -104,7 +100,6 @@ def edit_tracker(filename):
             "activityName": activityName,
             "timesCompleted": timesCompleted[i],
             "completionGoal": completionGoal[i],
-            "percentFinished": str(round(timesCompleted[i]/completionGoal[i]*100))+"%"
         })
 
     return render_template("editTracker.html", filename=filename, table=table)

@@ -1,13 +1,18 @@
 {% extends "base.html" %}
 
 {% block title %}
-	Dashboard
+	Upload Image
 {% endblock %}
 
 {% block body %}
 	{% include "logout.html" %}
-	
-	<h1 class="display-2 mb-3">Dashboard</h1>
 
-    
+	<h1 class="display-2">Habit Tracker Analysis</h1>
+
+	{% include "flash.html" %}
+	
+	<h1 class="display-6 mb-3">Hi {{ name }}! Upload a new tracker below to see how well you kept up with your habits this month!</h1>
+	<form class="input-group" action="/upload/tracker" method="get">
+		<input class="btn btn-lg btn-primary" type="submit" value="Upload New Tracker" style="width: 100%;"/>
+	</form>
 {% endblock %}

@@ -18,38 +18,41 @@
 
     <img id="uploaded-image" class="my-4" src="{{url_for('get_image', filename=filename)}}" style="width:100%;"></img>
 
-    <div id="buttons" class="mb-3">
-        <button id="save" class="btn btn-lg btn-primary">Save Tracker</button>
-
-        <div class="btn-group">
-            <button class="btn btn-lg btn-primary dropdown-toggle" type="button" id="monthPicker" data-bs-toggle="dropdown" aria-expanded="false">
-                  {{ month | default('Month') }}
-            </button>
-            <ul class="dropdown-menu menu-scroll" aria-labelledby="dropdownMenu2">
-                <li><button class="dropdown-item month" type="button">January</button></li>
-                <li><button class="dropdown-item month" type="button">February</button></li>
-                <li><button class="dropdown-item month" type="button">March</button></li>
-                <li><button class="dropdown-item month" type="button">April</button></li>
-                <li><button class="dropdown-item month" type="button">May</button></li>
-                <li><button class="dropdown-item month" type="button">June</button></li>
-                <li><button class="dropdown-item month" type="button">July</button></li>
-                <li><button class="dropdown-item month" type="button">August</button></li>
-                <li><button class="dropdown-item month" type="button">September</button></li>
-                <li><button class="dropdown-item month" type="button">October</button></li>
-                <li><button class="dropdown-item month" type="button">November</button></li>
-                <li><button class="dropdown-item month" type="button">December</button></li>
-            </ul>
-        </div>
+    <div class="d-flex align-items-center">
+        <div id="buttons" class="m-2 flex-grow-1">
+            <button id="save" class="btn btn-primary">Save Tracker</button>
     
-        <div class="btn-group">
-            <button class="btn btn-lg btn-primary dropdown-toggle" type="button" id="yearPicker" data-bs-toggle="dropdown" aria-expanded="false">
-                  {{ year | default('Year') }}
-            </button>
-            <ul class="dropdown-menu menu-scroll" aria-labelledby="dropdownMenu2">
-                <li><button class="dropdown-item year" type="button">2021</button></li>
-                <li><button class="dropdown-item year" type="button">2022</button></li>
-            </ul>
+            <div class="btn-group">
+                <button class="btn btn-primary dropdown-toggle m-1" type="button" id="monthPicker" data-bs-toggle="dropdown" aria-expanded="false">
+                      {{ month | default('Month') }}
+                </button>
+                <ul class="dropdown-menu menu-scroll" aria-labelledby="dropdownMenu2">
+                    <li><button class="dropdown-item month" type="button">January</button></li>
+                    <li><button class="dropdown-item month" type="button">February</button></li>
+                    <li><button class="dropdown-item month" type="button">March</button></li>
+                    <li><button class="dropdown-item month" type="button">April</button></li>
+                    <li><button class="dropdown-item month" type="button">May</button></li>
+                    <li><button class="dropdown-item month" type="button">June</button></li>
+                    <li><button class="dropdown-item month" type="button">July</button></li>
+                    <li><button class="dropdown-item month" type="button">August</button></li>
+                    <li><button class="dropdown-item month" type="button">September</button></li>
+                    <li><button class="dropdown-item month" type="button">October</button></li>
+                    <li><button class="dropdown-item month" type="button">November</button></li>
+                    <li><button class="dropdown-item month" type="button">December</button></li>
+                </ul>
+            </div>
+        
+            <div class="btn-group">
+                <button class="btn btn-primary dropdown-toggle" type="button" id="yearPicker" data-bs-toggle="dropdown" aria-expanded="false">
+                      {{ year | default('Year') }}
+                </button>
+                <ul class="dropdown-menu menu-scroll" aria-labelledby="dropdownMenu2">
+                    <li><button class="dropdown-item year" type="button">2021</button></li>
+                    <li><button class="dropdown-item year" type="button">2022</button></li>
+                </ul>
+            </div>
         </div>
+        <div id="percentCompleted" class="h3 m-2"></div>
     </div>
     
     <table id="table" class="table table-hover align-middle">
@@ -65,7 +68,7 @@
             <td><b>{{ editable(row.activityName) }}</b></td>
             <td>{{ editable(row.timesCompleted) }}</td>
             <td>{{ editable(row.completionGoal) }}</td>
-            <td>{{ editable(row.percentFinished) }}</td>
+            <td></td>
             <td><i class="removeRowButton btn fas fa-trash"></i></td>
         </tr>
         {% endfor %}
@@ -87,19 +90,24 @@
 				})
 			})
 
-            // set delete row click listeners
+            // get table to variable
             $table = $("#table")
+
+            // set delete row click listeners
             $(document).on('click', '.removeRowButton', function() {
                 $(this).closest('tr').remove()
             })
 
+            // calculate percent finished per activity
+            calculatePercentFinishedPerActivity()
+
             // set editable changed listeners
             $(".editable").map(function() {
                 $(this).on('input', function() {
-                    recalculatePercentFinished()
+                    calculatePercentFinishedPerActivity()
                 })
             })
-            function recalculatePercentFinished() {
+            function calculatePercentFinishedPerActivity() {
                 $table.find('tr').each(function (i, el) {
                     if(i==0) return
                     var $tds = $(this).find('td')
@@ -108,6 +116,20 @@
                     var percentFinished = Math.round(timesCompleted/completionGoal*100)+"%"
                     $tds.eq(3).text(percentFinished)
                 })
+                $("#percentCompleted").html("Total Completion: <b>"+calculateTotalPercentFinished()+"%</b>")
+            }
+            function calculateTotalPercentFinished() {
+                var filled=0
+                var total=0
+                $table.find('tr').each(function (i, el) {
+                    if(i==0) return
+                    var $tds = $(this).find('td')
+                    var timesCompleted = $tds.eq(1).text().trim()
+                    var completionGoal = $tds.eq(2).text().trim()
+                    filled += parseInt(timesCompleted)
+                    total += parseInt(completionGoal)
+                })
+                return Math.round(filled/total*100)
             }
 
             // save table function
@@ -122,7 +144,8 @@
                     filename: filename,
                     month: $monthPicker.text(),
                     year: $yearPicker.text(),
-                    trackerData: []
+                    trackerData: [],
+                    percentFinished: calculateTotalPercentFinished()
                 }
                 // check if month and year are valid
                 if(data.month.trim() == "Month" || data.year.trim() == "Year") {
@@ -142,8 +165,7 @@
                     var row = {
                         activityName: $tds.eq(0).text().trim(),
                         timesCompleted: $tds.eq(1).text().trim(),
-                        completionGoal: $tds.eq(2).text().trim(),
-                        percentFinished: $tds.eq(3).text().trim()
+                        completionGoal: $tds.eq(2).text().trim()
                     }
                     // check no cell is empty
                     $.each(row, function(key, value) {
@@ -174,7 +196,7 @@
                         processData: false,
                         contentType: false,
                         success: function(response) {
-                            window.location.href = "/dashboard";
+                            window.location.href = "/";
                         }
                     })
                 }

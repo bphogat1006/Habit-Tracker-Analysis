@@ -1,4 +1,5 @@
 from enum import unique
+from flask.scaffold import F
 from flask.sessions import NullSession
 from app import app, db
 from calendar import month_name
@@ -20,6 +21,7 @@ class Tracker(db.Model):
     month = db.Column(db.Integer, nullable=False)
     year = db.Column(db.Integer, nullable=False)
     trackerData = db.Column(db.String(5000), nullable=False)
+    percentFinished = db.Column(db.Integer, nullable=False)
 
     def intToMonth(self):
         month_name[self.month]
