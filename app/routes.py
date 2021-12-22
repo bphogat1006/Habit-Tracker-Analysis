@@ -12,7 +12,7 @@ def create_db():
 
 @app.route("/", methods=['GET'])
 def view_home():
-    return render_template("home.html")
+    return render_template("home.html", name = request.cookies.get("username"))
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
