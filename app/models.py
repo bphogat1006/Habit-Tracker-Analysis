@@ -1,5 +1,5 @@
 from app import app, db
-from calendar import month_name
+from calendar import month_name, month_abbr
 from datetime import datetime
 
 class Tracker(db.Model):
@@ -9,7 +9,7 @@ class Tracker(db.Model):
     date_added = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     # Tracker data
     user = db.Column(db.String(20), nullable=False)
-    filename = db.Column(db.String(5+app.config["IMAGE_NAME_LENGTH"]), nullable=False, unique=True)
+    filename = db.Column(db.String(5+app.config["IMAGE_NAME_LENGTH"]), nullable=False)
     month = db.Column(db.Integer, nullable=False)
     year = db.Column(db.Integer, nullable=False)
     percentFinished = db.Column(db.Integer, nullable=False)
@@ -17,6 +17,9 @@ class Tracker(db.Model):
 
     def intToMonth(self):
         month_name[self.month]
+
+    def monthToInt(self):
+        return {month: index for index, month in enumerate(month_abbr) if month}
 
     def __repr__(self):
         return f"Tracker for user {self.user} from {self.month} {self.year} is {self.percentFinished}% completed."

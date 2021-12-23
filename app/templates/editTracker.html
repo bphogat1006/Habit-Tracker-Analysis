@@ -79,16 +79,16 @@
             // get month and year from dropwdowns
             $monthPicker = $("#monthPicker")
             $yearPicker = $("#yearPicker")
-			$("button.month").map(function () {
-				$(this).click(function() {
+            $("button.month").map(function () {
+                $(this).click(function() {
                     $monthPicker.text($(this).text())
-				})
-			})
-			$("button.year").map(function () {
-				$(this).click(function() {
+                })
+            })
+            $("button.year").map(function () {
+                $(this).click(function() {
                     $yearPicker.text($(this).text())
-				})
-			})
+                })
+            })
 
             // get table to variable
             $table = $("#table")
@@ -96,6 +96,7 @@
             // set delete row click listeners
             $(document).on('click', '.removeRowButton', function() {
                 $(this).closest('tr').remove()
+                calculatePercentFinishedPerActivity()
             })
 
             // calculate percent finished per activity
@@ -135,7 +136,7 @@
             // save table function
             function saveTable() {
                 var failed = false
-                // create trackerdata object that will be sent to database
+                // create trackerdata object that will be sent to database"
                 var username = document.cookie.split("=")[1]
                 var filename = window.location.pathname.split("/")
                 filename = filename[filename.length-1]
@@ -182,10 +183,11 @@
                     }
                     data.trackerData.push(row)
                 })
-                // ajax send data
+                // return data
                 if(!failed) {
                     return JSON.stringify(data)
                 }
+                return null
             }
             $("#save").click(function() {
                 data = saveTable();
@@ -197,11 +199,7 @@
                         processData: false,
                         contentType: false,
                         success: function(response) {
-                            if(response.code == 'SUCCESS') {
-                                window.location.href = "/"
-                            } else {
-                                window.location.href = "/error"
-                            }
+                            window.location.href = "/"
                         },
                         error: function(response) {
                             window.location.href = "/error"
@@ -210,7 +208,7 @@
                 }
             })
         })
-        
+
         function toTitleCase(str) {
             return str.replace(/\w\S*/g, function(txt){
                 return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();

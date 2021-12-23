@@ -1,9 +1,14 @@
 {% with messages = get_flashed_messages() %}
-    {% if messages %}
-        <ul class=flashes>
-        {% for message in messages %}
-        <li>{{ message }}</li>
-        {% endfor %}
+    {% if messages or custom_error %}
+        <ul id="flask-flash" class=flashes>
+            {% if messages %}
+                {% for message in messages %}
+                <li>{{ message }}</li>
+                {% endfor %}
+            {% endif %}
+            {% if custom_error %}
+                <li>{{ custom_error }}</li>
+            {% endif %}
         </ul>
     {% endif %}
 {% endwith %}

@@ -14,8 +14,12 @@ def create_db():
 
 @app.route("/", methods=['GET'])
 def view_home():
-    # result = Tracker.query.filter_by(user="Bhavya").all()
-    # print(result)
+    currUser = request.cookies.get("username")
+    secondUser = "Bhavya" if currUser=="Abby" else "Abby"
+    currUserTrackers = Tracker.query.filter_by(user=currUser).all()
+    secondUserTrackers = Tracker.query.filter_by(user=secondUser).all()
+    print(currUser,currUserTrackers)
+    print(secondUser,secondUserTrackers)
 
     return render_template("dashboard.html", name = request.cookies.get("username"))
 
@@ -66,10 +70,9 @@ def upload(type):
                 print("Tracker saved successfully")
                 response = make_response(jsonify({'code': 'SUCCESS'}), 201)
             except Exception as e:
-                flash("Tracker failed to save")
-                flash(e)
+                app.config['ERROR_HOLDER'] = str(e)
                 print("Tracker failed to save\n",e)
-                response = make_response(jsonify({'code': 'FAILURE'}), 500)
+                response = make_response(jsonify({'code': 'FAILURE', 'error':str(e)}), 400)
             return response
 
         if type == "img":
@@ -133,7 +136,10 @@ def http_error_handler(error):
 
 @app.route("/error", methods = ['GET'])
 def error():
-    return render_template("error.html")
+    e = app.config['ERROR_HOLDER']+""
+    app.config['ERROR_HOLDER'] = ''
+    print("ERROR HANDLED: ",e)
+    return render_template("error.html", custom_error = e)
 
 def genRandomString(len):
     chars = 'abcdefghijklmnopqrstuvwxyz123456789'
