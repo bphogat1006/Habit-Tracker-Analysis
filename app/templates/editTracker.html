@@ -142,13 +142,13 @@
                 data = {
                     user: username,
                     filename: filename,
-                    month: $monthPicker.text(),
-                    year: $yearPicker.text(),
+                    month: $monthPicker.text().trim(),
+                    year: $yearPicker.text().trim(),
                     percentFinished: calculateTotalPercentFinished(),
                     trackerData: []
                 }
                 // check if month and year are valid
-                if(data.month.trim() == "Month" || data.year.trim() == "Year") {
+                if(data.month == "Month" || data.year == "Year") {
                     alert("Failed. Please select the month and year for the tracker")
                     failed = true
                 }
@@ -167,7 +167,7 @@
                         timesCompleted: $tds.eq(1).text().trim(),
                         completionGoal: $tds.eq(2).text().trim()
                     }
-                    percentFinished = $tds.eq(3).text().trim()
+                    activityPercentFinished = $tds.eq(3).text().trim()
                     // check no cell is empty
                     $.each(row, function(key, value) {
                         if(value == "") {
@@ -176,8 +176,8 @@
                         }
                     });
                     // check percent completion isn't > 100%
-                    if(parseInt(percentFinished.split('%')[0]) > 100) {
-                        alert('Failed. Percent Completed for activity '+i+' is illegal: '+percentFinished)
+                    if(parseInt(activityPercentFinished.split('%')[0]) > 100) {
+                        alert('Failed. Percent Completed for activity '+i+' is illegal: '+activityPercentFinished)
                         failed = true
                     }
                     data.trackerData.push(row)
@@ -197,7 +197,11 @@
                         processData: false,
                         contentType: false,
                         success: function(response) {
-                            window.location.href = "/";
+                            if(response.code == 'SUCCESS') {
+                                window.location.href = "/"
+                            } else {
+                                window.location.href = "/error"
+                            }
                         },
                         error: function(response) {
                             window.location.href = "/error"

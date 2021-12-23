@@ -1,7 +1,5 @@
 from calendar import month
-from flask import render_template, request, redirect, url_for, flash, send_from_directory, jsonify, abort
-from flask.helpers import make_response
-from flask.scaffold import F
+from flask import render_template, request, redirect, url_for, flash, send_from_directory, make_response, jsonify
 from app import app, db
 from app.models import Tracker
 from app.trackerScanner import TrackerScanner
@@ -16,6 +14,8 @@ def create_db():
 
 @app.route("/", methods=['GET'])
 def view_home():
+    # result = Tracker.query.filter_by(user="Bhavya").all()
+    # print(result)
 
     return render_template("dashboard.html", name = request.cookies.get("username"))
 
@@ -48,6 +48,7 @@ def upload(type):
             return render_template("uploadTracker.html")
     else:
         if type == "tracker":
+            response = None
             try:
                 data = json.loads(request.data)
                 tracker = Tracker(
@@ -62,13 +63,14 @@ def upload(type):
                 db.session.commit()
 
                 flash("Tracker saved successfully")
-                return jsonify(message='Success'),200
+                print("Tracker saved successfully")
+                response = make_response(jsonify({'code': 'SUCCESS'}), 201)
             except Exception as e:
                 flash("Tracker failed to save")
                 flash(e)
-                print(e)
-                return jsonify(message=e),400
-                
+                print("Tracker failed to save\n",e)
+                response = make_response(jsonify({'code': 'FAILURE'}), 500)
+            return response
 
         if type == "img":
             image = request.files['image']
