@@ -16,12 +16,12 @@ def create_db():
 def view_home():
     currUser = request.cookies.get("username")
     secondUser = "Bhavya" if currUser=="Abby" else "Abby"
-    currUserTrackers = Tracker.query.filter_by(user=currUser).all()
-    secondUserTrackers = Tracker.query.filter_by(user=secondUser).all()
-    print(currUser,currUserTrackers)
-    print(secondUser,secondUserTrackers)
+    currUserTrackers = repr(Tracker.query.filter_by(user=currUser).all())
+    secondUserTrackers = repr(Tracker.query.filter_by(user=secondUser).all())
+    currUserData = ""+currUser+": "+currUserTrackers
+    secondUserData = ""+secondUser+": "+secondUserTrackers
 
-    return render_template("dashboard.html", name = request.cookies.get("username"))
+    return render_template("dashboard.html",name=currUser,currUserData=currUserData,secondUserData=secondUserData)
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
