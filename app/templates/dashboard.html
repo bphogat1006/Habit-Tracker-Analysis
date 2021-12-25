@@ -4,19 +4,47 @@
 	Upload Image
 {% endblock %}
 
+{% block head %}
+	<style>
+		.trackerImg {
+			max-width: 100%;
+		}
+	</style>
+{% endblock %}
+
 {% block body %}
 	{% include "logout.html" %}
 
-	<h1 class="display-2">Habit Tracker Analysis</h1>
+	<div class="d-flex flex-column align-items-center">
+		<h1 class="display-2 mb-4">Habit Tracker Analysis</h1>
+		
+		<h1 class="display-6 mb-3">Hi {{ name }}! Upload a new tracker below to see how well you kept up with your habits this month!</h1>
+		<form class="input-group mb-3" action="/upload/tracker" method="get">
+			<input class="btn btn-lg btn-primary" type="submit" value="Upload New Tracker" style="width: 100%;"/>
+		</form>
 
-	{% include "flash.html" %}
-	
-	<h1 class="display-6 mb-3">Hi {{ name }}! Upload a new tracker below to see how well you kept up with your habits this month!</h1>
-	<form class="input-group mb-3" action="/upload/tracker" method="get">
-		<input class="btn btn-lg btn-primary" type="submit" value="Upload New Tracker" style="width: 100%;"/>
-	</form>
+		{% include "flash.html" %}
+	</div>
 
-	<h1 class="display-2">Dashboard</h1>
-	<h3>{{ currUserData }}</h3>
-	<h3>{{ secondUserData }}</h3>
+	<h1 class="display-2 my-4 text-center">History</h1>
+
+	<div class="row">
+		{% if trackerList|length == 0 %}
+		<h2>No trackers to display!!!</h2>
+		{% endif %}
+		{% for tracker in trackerList %}
+		<div class="col-sm-4 col-6 p-3">
+			<div class="d-flex flex-column align-items-center p-4 border rounded-3 shadow">
+				<h1><b>{{tracker.month}}, {{tracker.year}}</b></h1>
+				<h2 class="mb-3">Winner: <b>{{tracker.winner}}</b></h2>
+				<img class="trackerImg mt-auto mb-2 rounded-3 shadow" src="{{ url_for('get_image', filename=tracker.currTrackerFile) }}" alt="">
+				<span class="btn fa-stack text-center" style="font-size: 1.5em;">
+					<i class="far fa-circle fa-stack-2x"></i>
+					<i class="fas fa-pen"></i>
+				</span>
+			</div>
+		</div>
+        {% endfor %}
+	</div>
+
 {% endblock %}

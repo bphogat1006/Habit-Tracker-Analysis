@@ -15,11 +15,5 @@ class Tracker(db.Model):
     percentFinished = db.Column(db.Integer, nullable=False)
     trackerData = db.Column(db.String(5000), nullable=False)
 
-    def intToMonth(self):
-        month_name[self.month]
-
-    def monthToInt(self):
-        return {month: index for index, month in enumerate(month_abbr) if month}
-
     def __repr__(self):
         return f"Tracker for user {self.user} from {self.month} {self.year} is {self.percentFinished}% completed."

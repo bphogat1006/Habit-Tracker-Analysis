@@ -1,9 +1,11 @@
 from calendar import month
+import enum
 from flask import render_template, request, redirect, url_for, flash, send_from_directory, make_response, jsonify
 from app import app, db
 from app.models import Tracker
 from app.trackerScanner import TrackerScanner
 from werkzeug.utils import secure_filename
+from calendar import month_name
 import os
 import json
 import random
@@ -16,12 +18,56 @@ def create_db():
 def view_home():
     currUser = request.cookies.get("username")
     secondUser = "Bhavya" if currUser=="Abby" else "Abby"
-    currUserTrackers = repr(Tracker.query.filter_by(user=currUser).all())
-    secondUserTrackers = repr(Tracker.query.filter_by(user=secondUser).all())
-    currUserData = ""+currUser+": "+currUserTrackers
-    secondUserData = ""+secondUser+": "+secondUserTrackers
 
-    return render_template("dashboard.html",name=currUser,currUserData=currUserData,secondUserData=secondUserData)
+    currUserTrackers = Tracker.query.filter_by(user=currUser).all()
+    secondUserTrackers = Tracker.query.filter_by(user=secondUser).all()
+
+    for i, tracker in enumerate(currUserTrackers):
+        currUserTrackers[i] = {
+            "filename": tracker.filename,
+            "percentFinished": tracker.percentFinished,
+            "month": tracker.month,
+            "year": tracker.year
+        }
+    for i, tracker in enumerate(secondUserTrackers):
+        secondUserTrackers[i] = {
+            "filename": tracker.filename,
+            "percentFinished": tracker.percentFinished,
+            "month": tracker.month,
+            "year": tracker.year
+        }
+
+    print(currUserTrackers, secondUserTrackers)
+
+    trackerList = []
+    for currTracker in currUserTrackers:
+        currMonth = currTracker.get("month")
+        currYear = currTracker.get("year")
+        for secondTracker in secondUserTrackers:
+            if currMonth == secondTracker.get("month") and currYear == secondTracker.get("year"):
+                winner = winnerPercentage = None
+                if currTracker.get("percentFinished") > secondTracker.get("percentFinished"):
+                    winner = currUser
+                    winnerPercentage = currTracker.get("percentFinished")
+                elif currTracker.get("percentFinished") < secondTracker.get("percentFinished"):
+                    winner = secondUser
+                    winnerPercentage = secondTracker.get("percentFinished")
+                else:
+                    winner = "TIE"
+                    winnerPercentage = secondTracker.get("percentFinished")
+                trackerList.append({
+                    "winner": winner,
+                    "percentFinished": winnerPercentage,
+                    "month": currMonth,
+                    "year": currYear,
+                    "currTrackerFile": currTracker.get("filename"),
+                    "secondTrackerFile": secondTracker.get("filename")
+                })
+
+    monthToInt = {month: index for index, month in enumerate(month_name) if month}
+    trackerList.sort(key=lambda t: (t.get("year"), monthToInt[t.get("month")]), reverse=True)
+
+    return render_template("dashboard.html", name=currUser, trackerList=trackerList)
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
@@ -63,6 +109,8 @@ def upload(type):
                     percentFinished = str(data.get('percentFinished')),
                     trackerData = json.dumps(data.get('trackerData'))
                 )
+                # delete trackers in db of the current user if either the filename matches or the month/year matches
+                Tracker.query.filter((Tracker.user==tracker.user) & ((Tracker.filename==tracker.filename) | ((Tracker.month==tracker.month) & (Tracker.year==tracker.year)))).delete()
                 db.session.add(tracker)
                 db.session.commit()
 
