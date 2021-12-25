@@ -1,0 +1,23 @@
+<div class="d-flex align-items-center mb-3">
+    <h1 id="navigateHome" class="btn h-1 fs-1 fw-bold">Habit Tracker Analysis</h1>
+    <form id="logout-form" class="input-group ms-auto" action="/login" method="get" onsubmit="logout()" style="width: fit-content; height: fit-content;">
+		<input class="btn btn-lg btn-primary" type="submit" value="Logout"/>
+	</form>
+</div>
+
+<script>
+    $(() => {
+        // navigate home if page title is clicked
+        $("#navigateHome").click(() => {
+            window.location.href = "/"
+        })
+        // auto logout if no username in cookies
+        if(document.cookie.indexOf('username=') == -1) {
+            $("#logout-form").submit()
+        }
+    })
+    // when logout clicked, delete username cookie
+    function logout() {
+        document.cookie = "username=;path=/;expires=Thu, 01 Jan 1970 00:00:01 GMT"
+    }
+</script>

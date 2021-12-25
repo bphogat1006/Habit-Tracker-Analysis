@@ -1,6 +1,6 @@
 from calendar import month
 import enum
-from flask import render_template, request, redirect, url_for, flash, send_from_directory, make_response, jsonify
+from flask import render_template, request, redirect, url_for, flash, send_from_directory, make_response, jsonify, abort
 from app import app, db
 from app.models import Tracker
 from app.trackerScanner import TrackerScanner
@@ -145,38 +145,54 @@ def edit_tracker(filename):
     if(not os.path.isfile(path)):
         flash("tracker '" + filename + "' does not exist")
 
-    # query db for tracker matching the filename and username
-
-    tracker = TrackerScanner(path)
-    try:
-        tracker.scanTracker()
-    except Exception as e:
-        print(e)
-        flash(e)
-    
-    data = tracker.data
-    timesCompleted = []
-    completionGoal = []
-    numDaysInMonth = 31 # FIX AUTOMATICALLY
-    for row in data:
-        if 0.5 in row:
-            timesCompleted.append(int(sum(row)*2))
-            completionGoal.append(numDaysInMonth*2)
-        else: 
-            timesCompleted.append(sum(row))
-            completionGoal.append(numDaysInMonth)
     table = []
-    for i in range(14):
-        activityName = "Click_to_edit_activity_name"
-        if completionGoal[i]==numDaysInMonth*2:
-            activityName = "Click_to_edit_activity_1 / Click_to_edit_activity_2"
-        table.append({
-            "activityName": activityName,
-            "timesCompleted": timesCompleted[i],
-            "completionGoal": completionGoal[i],
-        })
+    trackerExists = False
+    tracker = None
+    
+    queryResult = Tracker.query.filter_by(filename=filename).all()
+    if len(queryResult) != 0:
+        trackerExists = True
+        tracker = queryResult[0]
+        trackerData = json.loads(tracker.trackerData)
+        for row in trackerData:
+            table.append({
+                "activityName": row.get("activityName"),
+                "timesCompleted": row.get("timesCompleted"),
+                "completionGoal": row.get("completionGoal"),
+            })
+    else:
+        tracker = TrackerScanner(path)
+        try:
+            tracker.scanTracker()
+        except Exception as e:
+            print(e)
+            flash(e)
+        
+        data = tracker.data
+        timesCompleted = []
+        completionGoal = []
+        numDaysInMonth = 31 # FIX AUTOMATICALLY
+        for row in data:
+            if 0.5 in row:
+                timesCompleted.append(int(sum(row)*2))
+                completionGoal.append(numDaysInMonth*2)
+            else: 
+                timesCompleted.append(sum(row))
+                completionGoal.append(numDaysInMonth)
+        for i in range(14):
+            activityName = "Click_to_edit_activity_name"
+            if completionGoal[i]==numDaysInMonth*2:
+                activityName = "Click_to_edit_activity_1 / Click_to_edit_activity_2"
+            table.append({
+                "activityName": activityName,
+                "timesCompleted": timesCompleted[i],
+                "completionGoal": completionGoal[i],
+            })
 
-    return render_template("editTracker.html", filename=filename, table=table)
+    if trackerExists:
+        return render_template("editTracker.html", filename=filename, table=table, month=tracker.month, year=tracker.year)
+    else:
+        return render_template("editTracker.html", filename=filename, table=table)
 
 @app.errorhandler(Exception)
 def http_error_handler(error):
