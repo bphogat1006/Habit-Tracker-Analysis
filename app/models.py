@@ -17,3 +17,13 @@ class Tracker(db.Model):
 
     def __repr__(self):
         return f"Tracker for user {self.user} from {self.month} {self.year} is {self.percentFinished}% completed."
+
+class Activity(db.Model):
+    # metadata
+    __tablename__ = "Activities"
+    id = db.Column(db.Integer, primary_key=True)
+    date_added = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    user = db.Column(db.String(20), nullable=False)
+    month = db.Column(db.Integer, nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    percentFinished = db.Column(db.Integer, nullable=False)

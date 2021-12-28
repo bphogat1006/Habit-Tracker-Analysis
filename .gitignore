@@ -4,3 +4,4 @@ workspace.code-workspace
 venv
 run.py
 histogram.jpg
+app/static/uploads/*
