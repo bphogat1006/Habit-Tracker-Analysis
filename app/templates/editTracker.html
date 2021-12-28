@@ -2,7 +2,7 @@
 {% from "editable.html" import editable %}
 
 {% block title %}
-    Uploaded Image
+    Edit Tracker
 {% endblock %}
 
 {% block body %}
@@ -12,7 +12,7 @@
 
     {% include "flash.html" %}
 
-    <img id="uploaded-image" class="my-4" src="{{url_for('get_image', filename=filename)}}" style="width:100%;"></img>
+    <img id="image" class="my-4" src="{{url_for('get_image', filename=filename)}}" style="width:100%;"></img>
 
     <div class="d-flex align-items-center">
         <div id="buttons" class="m-2 flex-grow-1">

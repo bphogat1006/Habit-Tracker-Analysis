@@ -8,21 +8,24 @@ from matplotlib import pyplot
 # CLASS DERIVED FROM:
 # https://www.pyimagesearch.com/2016/10/03/bubble-sheet-multiple-choice-scanner-and-test-grader-using-omr-python-and-opencv/
 class TrackerScanner:
-    # whether or not to blur image before thresholding
-    __useBlurredForThresholding = True
     
     # init class
     def __init__(self, path):
         self.__path = path
         self.__readImage()
+        
     # runs all processing methods to extract bubble data
-    def scanTracker(self):
+    def scanTracker(self, docCoords):
         self.__prepareImage()
+        self.__docCoords = docCoords
         self.__fourPointTransform()
         self.__resizeTransformedImage()
         self.__binarize()
         self.__getBubbleContours()
         if self.numBubblesDetected != 434:
+            self.__saveImage(self.__paper, "paper")
+            self.__saveImage(self.__thresh, "thresh")
+            self.__saveImage(self.__bubblesFound, "bubblesFound")
             raise Exception(f"Tracker was not scanned correctly. Number of bubbles detected: {self.numBubblesDetected}/434")
         self.__sortContours()
         self.__scanBubbles()
@@ -65,51 +68,27 @@ class TrackerScanner:
 
     # methods for finding and scanning the bubbles
     def __prepareImage(self):
-        # auto-level image
+        # auto white point image
         self.__image = self.__original.copy()
-        gray = cv2.cvtColor(self.__original, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.bilateralFilter(gray, 5, 50, 75)
-        maxLuma = min(max(blurred.flatten()), 245)
         self.__image = cv2.bilateralFilter(self.__original, 5, 50, 75)
-        if(maxLuma < 245):
-            self.__image = self.__image.astype('float64')
-            self.__image *= 245/maxLuma
-            self.__image = self.__image.astype('uint8')
+        maxLuma = max(self.__image.flatten())
+        self.__image = self.__image.astype('float64')
+        self.__image *= 255/maxLuma
+        self.__image = self.__image.astype('uint8')
         # get grayscale version of image
         self.__gray = cv2.cvtColor(self.__image, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.bilateralFilter(self.__gray, 5, 50, 75)
-        if self.__useBlurredForThresholding:
-            self.__gray = blurred.copy()
-        # find edges
-        self.__edged = cv2.Canny(blurred, 75, 200)
-        # dilate edges slightly to assist in finding document
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3, 3))
-        self.__edged = cv2.dilate(self.__edged, kernel)
     def __fourPointTransform(self):	
-        # find contours in the edge map, then initialize
-        # the contour that corresponds to the document
-        cnts = cv2.findContours(self.__edged.copy(), cv2.RETR_EXTERNAL,
-            cv2.CHAIN_APPROX_SIMPLE)
-        cnts = imutils.grab_contours(cnts)
-        docCnt = None
-        # ensure that at least one contour was found
-        if len(cnts) > 0:
-            # sort the contours according to their size in
-            # descending order
-            cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
-            # loop over the sorted contours
-            for c in cnts:
-                # approximate the contour
-                peri = cv2.arcLength(c, True)
-                approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-                # if our approximated contour has four points,
-                # then we can assume we have found the paper
-                if len(approx) == 4:
-                    docCnt = approx
-                    break
-        if docCnt is None: raise Exception("No document found")
-        self.__pageContour = cv2.cvtColor(self.__edged.copy(), cv2.COLOR_GRAY2BGR)
-        cv2.drawContours(self.__pageContour, [docCnt], 0, (0, 255, 0), 3)
+        # get document contour using coordinates of the corners
+        height, width, channels = self.__image.shape
+        docCnt = []
+        for key in self.__docCoords:
+            xy = self.__docCoords.get(key)
+            x = xy.get('x')*width
+            y = xy.get('y')*height
+            docCnt.append([x, y])
+        docCnt = np.array(docCnt).reshape((-1,1,2)).astype(np.int32)
+        self.__docContour = self.__image.copy()
+        cv2.drawContours(self.__docContour, [docCnt], 0, (0, 255, 0), 3)
         # apply a four point perspective transform to both the
         # original image and grayscale image to obtain a top-down
         # birds eye view of the paper
@@ -150,15 +129,13 @@ class TrackerScanner:
             # should be sufficiently wide, sufficiently tall, and
             # have an aspect ratio approximately equal to 1
             checks = {
-                "location": (x>460 and y>420),
+                "location": 460<x<1910 and 420<y<1340,
                 "aspect_ratio": abs(1-ar) < 0.3,
-                "size": 30 < w < 50,
                 "num_vertices": 6 < len(approxVerts) < 17,
-                "area": 850 < area < 1200
+                "area": 850 < area < 1300
             }
-            if checks["location"] and checks["aspect_ratio"] and checks["size"] and checks["num_vertices"] and checks["area"]:
+            if checks["location"] and checks["aspect_ratio"] and checks["num_vertices"] and checks["area"]:
                 self.__bubbleCnts.append(c)
-
         self.numBubblesDetected = len(self.__bubbleCnts)
         self.__bubblesFound = cv2.cvtColor(self.__thresh.copy(), cv2.COLOR_GRAY2BGR)
         cv2.drawContours(self.__bubblesFound, self.__bubbleCnts, -1, (0, 255, 0), 3)
@@ -203,11 +180,11 @@ class TrackerScanner:
                 if ratioFilled > 55:
                     self.data[activityIndex].append(0)
                     self.__bubblesEmpty.append(bubble)
-                elif ratioFilled > 20:
+                elif ratioFilled > 16:
                     self.data[activityIndex].append(0.5)
                     self.__bubblesPartial.append(bubble)
                 else:
                     self.data[activityIndex].append(1)
                     self.__bubblesFilled.append(bubble)
         
-        self.__createHistogram(histogram, bucketsize=1, logScaleY=True)
+        self.__createHistogram(histogram, logScaleY=True)

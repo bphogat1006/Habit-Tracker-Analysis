@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Crop Image
+{% endblock %}
+
+{% block head %}
+    <style>
+        #containment-wrapper {
+            position: relative;
+        }
+        .crop-selector {
+            position: absolute;
+            color: #ffffff;
+            text-shadow: 0 0 5px blue;
+            font-size: 32px;
+            transform: translate(-50%, -50%);
+        }
+        #uploaded-image {
+            width:100%;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    {% include "pageHeader.html" %}
+
+    <h1 class="display-2">Crop Image</h1>
+
+    <h2>Drag each of the four circles to the four corners of your tracker.</h2>
+
+    <button id="crop" class="btn btn-primary btn-lg">Process Image</button>
+
+	{% include "flash.html" %}
+
+    <div id="containment-wrapper" class="my-4">
+        <img id="uploaded-image" src="{{url_for('get_image', filename=filename)}}"></img>
+        <i id="crop-top-left" class="crop-selector far fa-circle"></i>
+        <i id="crop-top-right" class="crop-selector far fa-circle"></i>
+        <i id="crop-bottom-right" class="crop-selector far fa-circle"></i>
+        <i id="crop-bottom-left" class="crop-selector far fa-circle"></i>
+    </div>
+
+    <script>
+        $(() => {
+
+            // move crop selectors to correct positions
+            $("#crop-top-left").css({top: "10%", left: "10%"})
+            $("#crop-top-right").css({top: "10%", left: "90%"})
+            $("#crop-bottom-right").css({top: "90%", left: "90%"})
+            $("#crop-bottom-left").css({top: "90%", left: "10%"})
+
+            // make crop selectors draggable
+            $(".crop-selector").draggable({
+                containment: "#containment-wrapper",
+                scroll: false
+            })
+
+            // un-translate crop selectors after dragging
+            $(".crop-selector").map(function () {
+                $(this).on("drag", (event, ui) => {
+                    $(this).css({transform: "translate(0, 0)"})
+                })
+            })
+
+            // set crop button functionality
+            $("#crop").click(function() {
+                var coords = []
+                $(".crop-selector").map(function () {
+                    var id = $(this).attr('id')
+                    var w = $("#uploaded-image").width()
+                    var h = $("#uploaded-image").height()
+                    var x = Math.round($(this).position().left+16)
+                    var y = Math.round($(this).position().top+16)
+                    coords.push({x: x/w, y: y/h})
+                })
+                coords = {
+                    topLeft: coords[0],
+                    topRight: coords[1],
+                    bottomRight: coords[2],
+                    bottomLeft: coords[3]
+                }
+
+                var path = window.location.pathname.split("/")
+                var filename = path[path.length-1]
+
+                window.location.href = "/edit/tracker/"+filename+"?crop-coords="+JSON.stringify(coords)
+            })
+        })
+    </script>
+{% endblock %}

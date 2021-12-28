@@ -15,7 +15,7 @@ def create_db():
     db.create_all()
 
 @app.route("/", methods=['GET'])
-def view_home():
+def view_dashboard():
     currUser = request.cookies.get("username")
     secondUser = "Bhavya" if currUser=="Abby" else "Abby"
 
@@ -36,8 +36,6 @@ def view_home():
             "month": tracker.month,
             "year": tracker.year
         }
-
-    print(currUserTrackers, secondUserTrackers)
 
     trackerList = []
     for currTracker in currUserTrackers:
@@ -137,7 +135,12 @@ def upload(type):
                 return redirect("/upload/tracker")
             path = os.path.join(app.root_path, app.config["IMAGE_UPLOADS_PATH"], filename)
             image.save(path)
-            return redirect(url_for('edit_tracker', filename=filename))
+            return redirect(url_for('crop_image', filename=filename))
+
+@app.route("/crop/<filename>", methods = ['GET'])
+def crop_image(filename):
+    if request.method == 'GET':
+        return render_template("cropImage.html", filename=filename)
 
 @app.route("/edit/tracker/<filename>", methods = ['GET'])
 def edit_tracker(filename):
@@ -163,7 +166,8 @@ def edit_tracker(filename):
     else:
         tracker = TrackerScanner(path)
         try:
-            tracker.scanTracker()
+            docCoords = json.loads(request.args.get('crop-coords'))
+            tracker.scanTracker(docCoords)
         except Exception as e:
             print(e)
             flash(e)
