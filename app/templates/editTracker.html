@@ -70,7 +70,21 @@
         {% endfor %}
     </table>
 
+    <div class="row g-3">
+        <div class="col-auto align-self-center">
+            <p>Set Completion Goal for each activity:</p>
+        </div>
+        <div class="col-auto">
+            <label for="quickSetCompletionGoal" class="visually-hidden">Number (ex. 31)</label>
+            <input type="number" class="form-control" id="quickSetCompletionGoal" placeholder="Number (ex. 31)">
+        </div>
+        <div class="col-auto">
+            <button id="submitQuickSetCompletionGoal" class="btn btn-primary mb-3"">Confirm</button>
+        </div>
+    </div>
+
     <script>
+        $table = null
         $(() => {
             // get month and year from dropwdowns
             $monthPicker = $("#monthPicker")
@@ -94,9 +108,6 @@
                 $(this).closest('tr').remove()
                 calculatePercentFinishedPerActivity()
             })
-
-            // calculate percent finished per activity
-            calculatePercentFinishedPerActivity()
 
             // set editable changed listeners
             $(".editable").map(function() {
@@ -128,6 +139,24 @@
                 })
                 return Math.round(filled/total*100)
             }
+
+            // calculate percent finished per activity
+            calculatePercentFinishedPerActivity()
+
+            // function to quickly set completion goal for each activity
+            $("#submitQuickSetCompletionGoal").click(() => {
+                $table.find('tr').each(function (i, el) {
+                    // get user defined completion goal
+                    goal = $("#quickSetCompletionGoal").val()
+                    // skip table header
+                    if(i==0) return
+                    // set completion goal cell
+                    var $tds = $(this).find('td')
+                    completionGoal = $tds.eq(2).find("div").get(0)
+                    completionGoal.textContent = goal
+                })
+                calculatePercentFinishedPerActivity()
+            })
 
             // save table function
             function saveTable() {
