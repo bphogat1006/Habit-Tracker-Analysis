@@ -62,6 +62,8 @@
 					{{ trackerThumbnail(tracker.currTrackerFile, tracker.currPercentFinished, true) }}
 					{% if tracker.winner is defined %}
 					{{ trackerThumbnail(tracker.secondTrackerFile, tracker.secondPercentFinished, false) }}
+					{% else %}
+					<div style="visibility: hidden;">{{ trackerThumbnail(tracker.currTrackerFile, tracker.currPercentFinished, true) }}</div>
 					{% endif %}
 				</div>
 			</div>
