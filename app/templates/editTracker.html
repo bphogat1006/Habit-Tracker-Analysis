@@ -8,7 +8,8 @@
 {% block body %}
 	{% include "pageHeader.html" %}
 
-    <h1 class="display-2">Uploaded image</h1>
+    <h1 class="display-2">Edit Tracker</h1>
+    <p id="tracker-owner" class="d-none">{{trackerOwner}}</p>
 
     {% include "flash.html" %}
 
@@ -86,6 +87,13 @@
     <script>
         $table = null
         $(() => {
+            // disable save button if current user doesn't own the tracker being edited
+            var trackerOwner = $("#tracker-owner").text()
+            var currUser = document.cookie.split("=")[1]
+            if(trackerOwner != currUser) {
+                $('#save').addClass('disabled')
+            }
+
             // get month and year from dropwdowns
             $monthPicker = $("#monthPicker")
             $yearPicker = $("#yearPicker")
@@ -162,11 +170,10 @@
             function saveTable() {
                 var failed = false
                 // create trackerdata object that will be sent to database"
-                var username = document.cookie.split("=")[1]
                 var filename = window.location.pathname.split("/")
                 filename = filename[filename.length-1]
                 data = {
-                    user: username,
+                    user: trackerOwner,
                     filename: filename,
                     month: $monthPicker.text().trim(),
                     year: $yearPicker.text().trim(),

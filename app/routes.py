@@ -41,31 +41,34 @@ def view_dashboard():
     for currTracker in currUserTrackers:
         currMonth = currTracker.get("month")
         currYear = currTracker.get("year")
+        t = {
+            "month": currMonth,
+            "year": currYear,
+            "currTrackerFile": currTracker.get("filename"),
+            "currPercentFinished": currTracker.get("percentFinished")
+        }
+        # if the second user has a tracker from the same month, include it
         for secondTracker in secondUserTrackers:
             if currMonth == secondTracker.get("month") and currYear == secondTracker.get("year"):
-                winner = winnerPercentage = None
-                if currTracker.get("percentFinished") > secondTracker.get("percentFinished"):
+                winner = None
+                currPercentFinished = currTracker.get("percentFinished")
+                secondPercentFinished = secondTracker.get("percentFinished")
+                if currPercentFinished > secondPercentFinished:
                     winner = currUser
-                    winnerPercentage = currTracker.get("percentFinished")
-                elif currTracker.get("percentFinished") < secondTracker.get("percentFinished"):
+                elif currPercentFinished < secondPercentFinished:
                     winner = secondUser
-                    winnerPercentage = secondTracker.get("percentFinished")
                 else:
                     winner = "TIE"
-                    winnerPercentage = secondTracker.get("percentFinished")
-                trackerList.append({
-                    "winner": winner,
-                    "percentFinished": winnerPercentage,
-                    "month": currMonth,
-                    "year": currYear,
-                    "currTrackerFile": currTracker.get("filename"),
-                    "secondTrackerFile": secondTracker.get("filename")
-                })
+                t['winner'] = winner
+                t['secondTrackerFile'] = secondTracker.get("filename")
+                t['secondPercentFinished'] = secondPercentFinished
+        trackerList.append(t)
+                
 
     monthToInt = {month: index for index, month in enumerate(month_name) if month}
     trackerList.sort(key=lambda t: (t.get("year"), monthToInt[t.get("month")]), reverse=True)
 
-    return render_template("dashboard.html", name=currUser, trackerList=trackerList)
+    return render_template("dashboard.html", currUser=currUser, trackerList=trackerList)
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
@@ -150,12 +153,13 @@ def edit_tracker(filename):
 
     table = []
     trackerExists = False
-    tracker = None
+    tracker = trackerOwner = None
     
     queryResult = Tracker.query.filter_by(filename=filename).all()
     if len(queryResult) != 0:
         trackerExists = True
         tracker = queryResult[0]
+        trackerOwner = tracker.user
         trackerData = json.loads(tracker.trackerData)
         for row in trackerData:
             table.append({
@@ -165,6 +169,7 @@ def edit_tracker(filename):
             })
     else:
         tracker = TrackerScanner(path)
+        trackerOwner = request.cookies.get("username")
         try:
             docCoords = json.loads(request.args.get('crop-coords'))
             tracker.scanTracker(docCoords)
@@ -193,10 +198,11 @@ def edit_tracker(filename):
                 "completionGoal": completionGoal[i],
             })
 
+    print(trackerOwner)
     if trackerExists:
-        return render_template("editTracker.html", filename=filename, table=table, month=tracker.month, year=tracker.year)
+        return render_template("editTracker.html", filename=filename, table=table, trackerOwner=trackerOwner, month=tracker.month, year=tracker.year)
     else:
-        return render_template("editTracker.html", filename=filename, table=table)
+        return render_template("editTracker.html", filename=filename, table=table, trackerOwner=trackerOwner)
 
 @app.errorhandler(Exception)
 def http_error_handler(error):
