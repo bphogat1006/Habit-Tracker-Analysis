@@ -252,7 +252,9 @@ def activity_history(activity):
         ax.annotate(txt, (x[i], y[i]))
 
     graphFilename = "activity_"+genRandomString(5)+".jpg"
-    path = f"app/static/uploads/{graphFilename}"
+    path = os.path.abspath(app.root_path)
+    path = os.path.join(app.root_path, app.config["IMAGE_UPLOADS_PATH"], graphFilename)
+    print(path)
     pyplot.savefig(path)
 
     return render_template("activityHistory.html", activityName = activity, graphFilename = graphFilename)
