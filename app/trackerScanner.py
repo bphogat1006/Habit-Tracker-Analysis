@@ -5,8 +5,7 @@ from imutils.perspective import four_point_transform
 import numpy as np
 from matplotlib import pyplot
 
-# CLASS DERIVED FROM:
-# https://www.pyimagesearch.com/2016/10/03/bubble-sheet-multiple-choice-scanner-and-test-grader-using-omr-python-and-opencv/
+# DERIVED FROM https://www.pyimagesearch.com/2016/10/03/bubble-sheet-multiple-choice-scanner-and-test-grader-using-omr-python-and-opencv/
 class TrackerScanner:
     
     # init class
@@ -23,7 +22,6 @@ class TrackerScanner:
         self.__binarize()
         self.__getBubbleContours()
         if self.numBubblesDetected != 434:
-            self.__saveImage(self.__paper, "paper")
             self.__saveImage(self.__thresh, "thresh")
             self.__saveImage(self.__bubblesFound, "bubblesFound")
             raise Exception(f"Tracker was not scanned correctly. Number of bubbles detected: {self.numBubblesDetected}/434")
