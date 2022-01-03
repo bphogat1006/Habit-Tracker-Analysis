@@ -83,7 +83,6 @@
 
 		<div class="tab-pane fade" id="nav-upload" role="tabpanel">
 			<h1 class="display-2 my-4 text-center">Upload</h1>
-	
 			<h1 class="display-6 mb-4 text-center">Hi {{ currUser }}! Upload a new tracker below to see how well you kept up with your habits this month!</h1>
 			<form class="input-group mb-5 mx-auto" action="/upload/tracker" method="get" style="width: fit-content;">
 				<input class="btn btn-lg btn-primary" type="submit" value="Upload New Tracker"/>
@@ -92,13 +91,14 @@
 
 		<div class="tab-pane fade" id="nav-progress" role="tabpanel">
 			<h1 class="display-2 my-4 text-center">Activity History</h1>
+			<h1 class="display-6 mb-4 text-center">Click any activity below to see your completion history for that activity.</h1>
 			
 			{% if activityList|length > 0 %}
-				<div class="border p-2 bg-light fs-5">
-					<form class="mb-2">
+				<div class="border p-2 bg-light fs-5 d-flex flex-column align-items-center mx-auto" style="width: 60%;">
+					<!-- <form class="mb-2">
 						<input id="activity-search" type="search" class="form-control form-control-lg" autocomplete="off" placeholder="Type to search...">
-					</form>
-					<ul id="activity-list" class="list-group">
+					</form> -->
+					<ul id="activity-list" class="list-group w-100">
 						{% for activity in activityList %}
 						<li class="view-activity list-group-item list-group-item-action">{{ activity }}</li>
 						{% endfor %}
