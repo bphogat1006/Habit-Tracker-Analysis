@@ -131,7 +131,7 @@ class TrackerScanner:
             checks = {
                 "location": 460<x<1910 and 420<y<1340,
                 "aspect_ratio": abs(1-ar) < 0.3,
-                "num_vertices": 6 < len(approxVerts) < 17,
+                "num_vertices": 6 < len(approxVerts) < 20,
                 "area": 850 < area < 1300
             }
             if checks["location"] and checks["aspect_ratio"] and checks["num_vertices"] and checks["area"]:

@@ -16,11 +16,11 @@
     <img id="image" class="my-4" src="{{url_for('get_image', filename=filename)}}" style="width:100%;"></img>
 
     <div class="d-flex align-items-center">
-        <div id="buttons" class="m-2 flex-grow-1">
-            <button id="save" class="btn btn-primary">Save Tracker</button>
+        <div id="buttons" class="my-2 flex-grow-1">
+            <button id="save" class="btn btn-primary me-1">Save Tracker</button>
     
-            <div class="btn-group">
-                <button class="btn btn-primary dropdown-toggle m-1" type="button" id="monthPicker" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="btn-group me-1 my-1">
+                <button class="btn btn-primary dropdown-toggle" type="button" id="monthPicker" data-bs-toggle="dropdown" aria-expanded="false">
                       {{ month | default('Month') }}
                 </button>
                 <ul class="dropdown-menu menu-scroll" aria-labelledby="dropdownMenu2">
