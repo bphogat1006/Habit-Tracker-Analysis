@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}
+	{{ activityName }}
+{% endblock %}
+
+{% block body %}
+	{% include "pageHeader.html" %}
+
+	{% include "flash.html" %}
+
+	<h1 class="display-2 my-4 text-center">Activity History</h1>
+	<h1 class="display-6 text-center">{{ activityName }}</h1>
+    
+    <div class="d-flex align-items-center flex-column">
+        <img id="uploaded-image" style="width:60%;" src="{{url_for('get_image', filename=graphFilename)}}"></img>
+    </div>
+{% endblock %}

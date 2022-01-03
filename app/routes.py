@@ -9,6 +9,8 @@ from calendar import month_name
 import os
 import json
 import random
+from matplotlib import pyplot, dates
+import datetime as dt
 
 @app.before_first_request
 def create_db():
@@ -16,9 +18,11 @@ def create_db():
 
 @app.route("/", methods=['GET'])
 def view_dashboard():
+    # get current user's name
     currUser = request.cookies.get("username")
     secondUser = "Bhavya" if currUser=="Abby" else "Abby"
 
+    # get all trackers and do a comparison between them
     currUserTrackers = Tracker.query.filter_by(user=currUser).all()
     secondUserTrackers = Tracker.query.filter_by(user=secondUser).all()
 
@@ -63,12 +67,23 @@ def view_dashboard():
                 t['secondTrackerFile'] = secondTracker.get("filename")
                 t['secondPercentFinished'] = secondPercentFinished
         trackerList.append(t)
-                
 
     monthToInt = {month: index for index, month in enumerate(month_name) if month}
     trackerList.sort(key=lambda t: (t.get("year"), monthToInt[t.get("month")]), reverse=True)
 
-    return render_template("dashboard.html", currUser=currUser, trackerList=trackerList)
+    # get list of the user's activities
+    activities = []
+    currUserTrackers = Tracker.query.filter_by(user=currUser).all()
+    for tracker in currUserTrackers:
+        activities.extend([row.get("activityName") for row in json.loads(tracker.trackerData)])
+    activityList = []
+    [activityList.append(activity) for activity in activities if activity not in activityList]
+    for activity in activityList:
+        if "Click_to_edit" in activity:
+            activityList.clear()
+    activityList.sort()
+
+    return render_template("home.html", currUser=currUser, trackerList=trackerList, activityList=activityList)
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
@@ -203,6 +218,44 @@ def edit_tracker(filename):
         return render_template("editTracker.html", filename=filename, table=table, trackerOwner=trackerOwner, month=tracker.month, year=tracker.year)
     else:
         return render_template("editTracker.html", filename=filename, table=table, trackerOwner=trackerOwner)
+
+@app.route("/activity/<activity>", methods = ['GET'])
+def activity_history(activity):
+
+    currUser = request.cookies.get("username")
+    currUserTrackers = Tracker.query.filter_by(user=currUser).all()
+    activityData = []
+    monthToInt = {month: index for index, month in enumerate(month_name) if month}
+
+    for tracker in currUserTrackers:
+        for row in json.loads(tracker.trackerData):
+            if row.get("activityName") == activity:
+                month = str(monthToInt[tracker.month])
+                year = str(tracker.year)
+                data = {
+                    "date": month+"/"+year,
+                    "percentage": float(row.get("timesCompleted")) / float(row.get("completionGoal"))
+                }
+                activityData.append(data)
+
+    activityData.sort(key=lambda activity: dt.datetime.strptime(activity["date"],'%m/%Y').date())
+    x = [str(activity["date"]) for activity in activityData]
+    y = [round(activity["percentage"]*100) for activity in activityData]
+    n = [str(val)+"%" for val in y]
+    pyplot.xlabel('Date')
+    pyplot.ylabel('Percentage Completed')
+    pyplot.plot(x,y)
+    fig, ax = pyplot.subplots()
+    ax.plot(x, y)
+
+    for i, txt in enumerate(n):
+        ax.annotate(txt, (x[i], y[i]))
+
+    graphFilename = "activity_"+genRandomString(5)+".jpg"
+    path = f"app/static/uploads/{graphFilename}"
+    pyplot.savefig(path)
+
+    return render_template("activityHistory.html", activityName = activity, graphFilename = graphFilename)
 
 @app.errorhandler(Exception)
 def http_error_handler(error):

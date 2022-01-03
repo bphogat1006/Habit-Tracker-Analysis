@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}
+	Dashboard
+{% endblock %}
+
+{% block head %}
+	<style>
+		.trackerImg {
+			max-width: 100%;
+		}
+	</style>
+{% endblock %}
+
+{% block body %}
+	{% include "pageHeader.html" %}
+
+	{% include "flash.html" %}
+
+	<nav>
+		<div class="nav nav-tabs nav-justified" id="nav-tab" role="tablist">
+			<button class="nav-link active" data-bs-toggle="tab" data-bs-target="#nav-dashboard" type="button" role="tab">
+				<b>Dashboard</b>
+			</button>
+			<button class="nav-link" data-bs-toggle="tab" data-bs-target="#nav-upload" type="button" role="tab">
+				<b>Upload</b>
+			</button>
+			<button class="nav-link" data-bs-toggle="tab" data-bs-target="#nav-progress" type="button" role="tab">
+				<b>Activity History</b>
+			</button>
+		</div>
+	</nav>
+	
+	<div class="tab-content">
+		<div class="tab-pane fade show active" id="nav-dashboard" role="tabpanel">
+			<h1 class="display-2 my-4 text-center">Dashboard</h1>
+
+			<div class="row">
+				{% if trackerList|length == 0 %}
+				<h2>No trackers to display!!!</h2>
+				{% endif %}
+		
+				{% macro trackerThumbnail(file, percentFinished, belongsToCurrUser) %}
+				<div class="tracker-thumbnail d-flex align-items-stretch w-100 mt-3">
+					<div class="d-flex flex-column align-items-center justify-content-center me-3">
+						<h3 class="mb-3"><b>{{percentFinished}}%</b></h2>
+						<span class="view-tracker btn fa-stack text-center mb-3" style="font-size: 1.5em;">
+							<i class="far fa-circle fa-stack-2x"></i>
+							{% if belongsToCurrUser == true %}
+							<i class="fas fa-pen"></i>
+							{% else %}
+							<i class="fas fa-eye"></i>
+							{% endif %}
+						</span>
+					</div>
+					<div class="flex-grow-1">
+						<img class="rounded-3 shadow w-100" src="{{ url_for('get_image', filename=file) }}">
+					</div>
+				</div>
+				{% endmacro %}
+			
+				{% for tracker in trackerList %}
+				<div class="col-lg-4 col-sm-6 col-12 p-3">
+					<div class="d-flex flex-column align-items-center p-4 h-100 border rounded-3 shadow">
+						<h1><b>{{tracker.month}} {{tracker.year}}</b></h1>
+						{% if tracker.winner is defined %}
+						<h2>Winner: <b>{{tracker.winner}}</b></h2>
+						{% else %}
+						{% endif %}
+						<div class="mt-auto w-100">
+							{{ trackerThumbnail(tracker.currTrackerFile, tracker.currPercentFinished, true) }}
+							{% if tracker.winner is defined %}
+							{{ trackerThumbnail(tracker.secondTrackerFile, tracker.secondPercentFinished, false) }}
+							{% else %}
+							<div style="visibility: hidden;">{{ trackerThumbnail(tracker.currTrackerFile, tracker.currPercentFinished, true) }}</div>
+							{% endif %}
+						</div>
+					</div>
+				</div>
+				{% endfor %}
+			</div>
+		</div>
+
+		<div class="tab-pane fade" id="nav-upload" role="tabpanel">
+			<h1 class="display-2 my-4 text-center">Upload</h1>
+	
+			<h1 class="display-6 mb-4 text-center">Hi {{ currUser }}! Upload a new tracker below to see how well you kept up with your habits this month!</h1>
+			<form class="input-group mb-5 mx-auto" action="/upload/tracker" method="get" style="width: fit-content;">
+				<input class="btn btn-lg btn-primary" type="submit" value="Upload New Tracker"/>
+			</form>
+		</div>
+
+		<div class="tab-pane fade" id="nav-progress" role="tabpanel">
+			<h1 class="display-2 my-4 text-center">Activity History</h1>
+			
+			{% if activityList|length > 0 %}
+				<div class="border p-2 bg-light fs-5">
+					<form class="mb-2">
+						<input id="activity-search" type="search" class="form-control form-control-lg" autocomplete="off" placeholder="Type to search...">
+					</form>
+					<ul id="activity-list" class="list-group">
+						{% for activity in activityList %}
+						<li class="view-activity list-group-item list-group-item-action">{{ activity }}</li>
+						{% endfor %}
+					</ul>
+				</div>
+			{% else %}
+				<h2 class="text-center">Please enter all activity names, then come back here!</h2>
+			{% endif %}
+		</div>
+	</div>
+
+	<script>
+		$(() => {
+			// set onclick for image thumbnail edit buttons
+			$(document).on('click', '.view-tracker', function() {
+                var src = $(this).closest('.tracker-thumbnail').find('img').attr('src')
+				src = src.split("/")
+				src = src[src.length-1]
+				window.location.href = "/edit/tracker/"+src
+            })
+
+			// set onclick for activity list items
+			$(document).on('click', '.view-activity', function() {
+                var activity = $(this).text()
+				window.location.href = "/activity/"+activity
+            })
+		})
+	</script>
+{% endblock %}
