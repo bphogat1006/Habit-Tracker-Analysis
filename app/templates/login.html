@@ -24,9 +24,17 @@
   </div>
 
   <script>
+      $(() => {
+        $("#username").keypress(function (e) {
+            if(e.which === 13 && !e.shiftKey) {
+                e.preventDefault();
+                $(this).closest("form").submit();
+            }
+        });
+      })
       function setUser() {
           username = $("#username").val()
-          document.cookie = 'username='+username+'; path=/'
+          document.cookie = 'username='+username+';'
       }
   </script>
 {% endblock %}
